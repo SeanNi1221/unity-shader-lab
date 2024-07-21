@@ -52,12 +52,58 @@ Shader "TextMeshPro/Ultra/Simple" {
         Comp Always
         Pass replace
       }
-    }
 
-    CGPROGRAM
-		#pragma target 3.0
-    #pragma vertex TmpUltra_VertShader
-    #pragma geometry TmpUltra_GeoShader
-    #pragma fragment TmpUltra_PixShader
+      CGPROGRAM
+      #pragma target 3.0
+      #pragma vertex VertShader
+      #pragma geometry GeomShader
+      #pragma fragment PixShader
+
+      #pragma shader_feature __ OUTLINE_ON
+      #pragma shader_feature __ MAXSTEPS_96
+      #pragma shader_feature __ DEBUG_MASK
+
+      #pragma require geometry
+
+      #include "UnityCG.cginc"
+      #include "Common.hlsl"
+
+      #define MAX_STEPS 128
+
+      tmp_plus_v2g VertShader(tmp_plus_a2v input) {
+
+        tmp_plus_v2g o;
+
+        o.position = mul(unity_ObjectToWorld, input.position);
+        o.normal = mul(unity_ObjectToWorld, intput.normal);
+        o.color = input.color;
+        o.uv0 = input.uv0;
+        o.uv1 = input.uv1;
+        o.uv2 = input.uv2;
+
+        return o;
+      }
+
+      // Extrudes the TMP quads
+      [maxvertexcount(24)]
+      void GeomShader(triangle tmp_plus_v2g input[3],
+                      inout TriangleStream<tmp_plus_g2f> triStream) {
+
+        tmp_plus_g2f o;
+
+        float3 def = float3(0, 0, 0);
+        float depth = input[0].uv2.r;
+        float3 extrusion = input[0].normal * depth;
+
+        float skewUV = abs(input[1].uv0.x - input[0].uv0.x);
+        float widthUV = abs(input[2].uv0.x - input[1].uv0.x);
+        float heightUV = abs(input[1].uv0.y - input[0].uv0.y);
+      }
+
+      void PixShader() {
+
+      }
+      ENDCG
+    }
   }
 }

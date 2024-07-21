@@ -36,27 +36,27 @@ float4            _OutlineTex_ST;
 // =================================================================================================
 // Structs
 // =================================================================================================
-struct vertex_t {
+struct tmp_plus_a2v {
   UNITY_VERTEX_INPUT_INSTANCE_ID
   float4  position			: POSITION;
   float3  normal        : NORMAL;
   fixed4  color         : COLOR;
   float2  uv0           : TEXCOORD0;
   float2  uv1           : TEXCOORD1;
-  float2  uv2           : TEXCOORD2;
-}
+  float4  uv2           : TEXCOORD2;
+};
 
-struct geometry_t {
+struct tmp_plus_v2g {
   UNITY_VERTEX_INPUT_INSTANCE_ID
   float4  position			: POSITION;
   float3  normal        : NORMAL;
   fixed4  color         : COLOR;
   float2  uv0           : TEXCOORD0;
   float2  uv1           : TEXCOORD1;
-  float2  uv2           : TEXCOORD2;
-}
+  float4  uv2           : TEXCOORD2;
+};
 
-struct pixel_t {
+struct tmp_plus_g2f {
   UNITY_VERTEX_INPUT_INSTANCE_ID
   float4  position			    : SV_POSITION;
   fixed4  color             : COLOR;
@@ -67,10 +67,21 @@ struct pixel_t {
   float4  boundariesLocalZ  : TEXCOORD4;
   float4  tmpUltra          : TEXCOORD5;
   float2  tmp               : TEXCOORD6;
-}
+};
+
+struct PixelOutput {
+  fixed4 color : SV_Target;
+  float  depth : SV_Depth;
+};
 
 // =================================================================================================
 // Functions
 // =================================================================================================
-
+float ComputeDepth(float4 clipPos) {
+  #if defined(SHADER_TARGET_GLSL)
+    return (clipPos.z / clipPos.w) * 0.5 + 0.5;
+  #else
+    return clipPos.z / clipPos.w;
+  #endif
+}
 #endif
