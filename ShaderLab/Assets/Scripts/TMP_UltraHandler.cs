@@ -53,10 +53,10 @@ public class TMP_UltraHandler : MonoBehaviour {
       _ultraCharInfos.Add(ultraCharInfo);
     }
 
-    UpdateMeshValues();
+    UpdateVertUVs();
   }
 
-  private void UpdateMeshValues() {
+  private void UpdateVertUVs() {
     var count = Mathf.Min(_ultraCharInfos.Count, _tmp.textInfo.characterCount);
 
     for (int i = 0; i < _tmp.textInfo.meshInfo.Length; i++) {
