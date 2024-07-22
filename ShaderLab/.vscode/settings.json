@@ -1,4 +1,8 @@
 {
+    "files.associations": {
+        "*.cginc": "hlsl",
+        "*.hlsl": "hlsl"
+    },
     "files.exclude": {
         "**/.DS_Store": true,
         "**/.git": true,

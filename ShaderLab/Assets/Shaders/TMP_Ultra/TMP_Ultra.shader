@@ -75,7 +75,7 @@ Shader "TextMeshPro/Ultra/Simple" {
         tmp_plus_v2g o;
 
         o.position = mul(unity_ObjectToWorld, input.position);
-        o.normal = mul(unity_ObjectToWorld, intput.normal);
+        o.normal = mul(unity_ObjectToWorld, input.normal);
         o.color = input.color;
         o.uv0 = input.uv0;
         o.uv1 = input.uv1;
@@ -85,6 +85,8 @@ Shader "TextMeshPro/Ultra/Simple" {
       }
 
       // Extrudes the TMP quads
+      //
+      // TODO: Clarify - No shared vertices?
       [maxvertexcount(24)]
       void GeomShader(triangle tmp_plus_v2g input[3],
                       inout TriangleStream<tmp_plus_g2f> triStream) {
@@ -98,10 +100,44 @@ Shader "TextMeshPro/Ultra/Simple" {
         float skewUV = abs(input[1].uv0.x - input[0].uv0.x);
         float widthUV = abs(input[2].uv0.x - input[1].uv0.x);
         float heightUV = abs(input[1].uv0.y - input[0].uv0.y);
+        float xUV = min(input[0].uv0.x, input[2].uv0.x);
+        float yUV = min(input[0].uv0.y, input[1].uv0.y);
+        float4 boundariesUV = float4(xUV, yUV, widthUV, heightUV);
+
+        // World to local positions
+        float3 v0Local = mul(unity_WorldToObject, float4(input[0].position.xyz, 1)).xyz;
+        float3 v1Local = mul(unity_WorldToObject, float4(input[1].position.xyz, 1)).xyz;
+        float3 v2Local = mul(unity_WorldToObject, float4(input[2].position.xyz, 1)).xyz;
+
+        float skewLocal = abs(v1Local.x - v0Local.x);
+        float widthLocal = abs(v2Local.x - v1Local.x);
+        float heightLocal = abs(v1Local.y - v0Local.y);
+        float xLocal = min(v0Local.x, v2Local.x);
+        float yLocal = min(v0Local.y, v1Local.y);
+        float4 boundariesLocal = float4(xLocal, yLocal, widthLocal, heightLocal);
+
+        // TODO: What is this?
+        float4 boundariesLocalZ = float4(-depth, 0, skewLocal, skewUV);
+
+        FillGeometry(input, triStream, def, extrusion,
+                     boundariesUV, boundariesLocal, boundariesLocalZ);
       }
 
-      void PixShader() {
+      pixel_t PixShader(tmp_plus_g2f input) {
+        UNITY_SETUP_INSTANCE_ID(input);
 
+        pixel_t o;
+        o.color = _Color;
+        o.depth = 0;
+
+        // float bold = step(input.tmp.y, 0);
+        // float edge = lerp(_WeightNormal, _WeightBold, bold);
+        // edge += _OutlineWidth;
+
+        // float charDepth = input.tmpUltra.x;
+        // float2 depthMapped = input.tmpUltra.yz;
+
+        return ValidatePixel(o, 0);
       }
       ENDCG
     }
