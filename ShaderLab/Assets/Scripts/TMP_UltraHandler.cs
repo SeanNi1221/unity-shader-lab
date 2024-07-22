@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
-[ExecuteInEditMode, RequireComponent(typeof(TextMeshPro))]
+[ExecuteInEditMode, RequireComponent(typeof(TMP_Text))]
 public class TMP_UltraHandler : MonoBehaviour {
   public struct TMP_UltraCharInfo {
     public float Depth;
@@ -12,17 +12,17 @@ public class TMP_UltraHandler : MonoBehaviour {
   private readonly List<TMP_UltraCharInfo> _ultraCharInfos = new();
   private readonly List<Vector4> _cachedVertUVs = new();
 
-  [SerializeField] private TextMeshPro _tmp;
+  [SerializeField] private TMP_Text _tmp;
   [SerializeField] private float _defaultDepth = 1;
 
   private void OnValidate() {
-    _tmp = GetComponent<TextMeshPro>();
+    _tmp = GetComponent<TMP_Text>();
     _ultraCharInfos.Clear();
     OnTextChanged(_tmp);
   }
 
   private void OnEnable() {
-    _tmp = GetComponent<TextMeshPro>();
+    _tmp = GetComponent<TMP_Text>();
     TMPro_EventManager.TEXT_CHANGED_EVENT.Add(OnTextChanged);
   }
 
@@ -57,6 +57,16 @@ public class TMP_UltraHandler : MonoBehaviour {
   }
 
   private void UpdateVertUVs() {
+    // Debugs transform
+    {
+      string prefix = _tmp is TextMeshProUGUI ? "UI_" : "World_";
+      Debug.Log($"{prefix}world position: {transform.position}");
+      Debug.Log($"{prefix}local position: {transform.localPosition}");
+      Debug.Log($"{prefix}world scale: {transform.lossyScale}");
+      Debug.Log($"{prefix}local scale: {transform.localScale}");
+
+    }
+
     var count = Mathf.Min(_ultraCharInfos.Count, _tmp.textInfo.characterCount);
 
     for (int i = 0; i < _tmp.textInfo.meshInfo.Length; i++) {
@@ -78,7 +88,7 @@ public class TMP_UltraHandler : MonoBehaviour {
         var charInfo = _tmp.textInfo.characterInfo[iChar];
         int iMat = charInfo.materialReferenceIndex;
         if (iMat != i) {
-          Debug.Log($"---------material index not match: {iMat} to {i}, Char[{iChar}]: {charInfo.character}, meshIdx: {iMat}");
+          // Debug.Log($"---------material index not match: {iMat} to {i}, Char[{iChar}]: {charInfo.character}, meshIdx: {iMat}");
           continue;
         }
 
@@ -86,7 +96,7 @@ public class TMP_UltraHandler : MonoBehaviour {
         int iCharVert = charInfo.vertexIndex;
 
         if (iLastCharVert > iCharVert) {
-          Debug.Log($"---------vertex index not match: last({iLastCharVert}) to current({iCharVert}), Char[{iChar}]: {charInfo.character}");
+          // Debug.Log($"---------vertex index not match: last({iLastCharVert}) to current({iCharVert}), Char[{iChar}]: {charInfo.character}");
           continue;
         }
 
@@ -112,7 +122,7 @@ public class TMP_UltraHandler : MonoBehaviour {
         _cachedVertUVs[iCharVert + 3] = ultraVertData;
 
         if (iUnderlineVert != iCharVert) {
-          Debug.Log($"Set different underline vertex index: {iUnderlineVert}");
+          // Debug.Log($"Set different underline vertex index: {iUnderlineVert}");
 
           _cachedVertUVs[iUnderlineVert + 0] = ultraVertData;
           _cachedVertUVs[iUnderlineVert + 1] = ultraVertData;
@@ -131,7 +141,7 @@ public class TMP_UltraHandler : MonoBehaviour {
         }
 
         if (iStrikethroughVert != iCharVert) {
-          Debug.Log($"Set different strikethrough vertex index: {iStrikethroughVert}");
+          // Debug.Log($"Set different strikethrough vertex index: {iStrikethroughVert}");
 
           _cachedVertUVs[iStrikethroughVert + 0] = ultraVertData;
           _cachedVertUVs[iStrikethroughVert + 1] = ultraVertData;

@@ -60,8 +60,8 @@ Shader "TextMeshPro/Ultra/Simple" {
       #pragma fragment PixShader
 
       #pragma shader_feature __ OUTLINE_ON
-      #pragma shader_feature __ MAXSTEPS_96
-      #pragma shader_feature __ DEBUG_MASK
+      #pragma shader_feature __ MAXSTEPS_128
+      #pragma multi_compile __ DEBUG_MASK
 
       #pragma require geometry
 
@@ -88,46 +88,57 @@ Shader "TextMeshPro/Ultra/Simple" {
       //
       // TODO: Clarify - No shared vertices?
       [maxvertexcount(24)]
-      void GeomShader(triangle tmp_plus_v2g input[3],
+      void GeomShader(triangle tmp_plus_v2g worldInput[3],
                       inout TriangleStream<tmp_plus_g2f> triStream) {
 
         tmp_plus_g2f o;
 
-        float3 def = float3(0, 0, 0);
-        float depth = input[0].uv2.r;
-        float3 extrusion = input[0].normal * depth;
+        float3 baseOffset = float3(0, 0, 0);
 
-        float skewUV = abs(input[1].uv0.x - input[0].uv0.x);
-        float widthUV = abs(input[2].uv0.x - input[1].uv0.x);
-        float heightUV = abs(input[1].uv0.y - input[0].uv0.y);
-        float xUV = min(input[0].uv0.x, input[2].uv0.x);
-        float yUV = min(input[0].uv0.y, input[1].uv0.y);
-        float4 boundariesUV = float4(xUV, yUV, widthUV, heightUV);
+        // ========================================================
+        // TODO: The problem for UGUI is in the depth passing
+
+        // float depth = worldInput[0].uv2.x;
+
+        // ========================================================
+
+        float depth = 20;
+
+        // World space, assumes that all worldInput normals are the same
+        float3 worldExtrusion = worldInput[0].normal * depth;
+
+        float skewUV = abs(worldInput[1].uv0.x - worldInput[0].uv0.x);
+        float widthUV = abs(worldInput[2].uv0.x - worldInput[1].uv0.x);
+        float heightUV = abs(worldInput[1].uv0.y - worldInput[0].uv0.y);
+        float xUV = min(worldInput[0].uv0.x, worldInput[2].uv0.x);
+        float yUV = min(worldInput[0].uv0.y, worldInput[1].uv0.y);
+        float4 boundsUV = float4(xUV, yUV, widthUV, heightUV);
 
         // World to local positions
-        float3 v0Local = mul(unity_WorldToObject, float4(input[0].position.xyz, 1)).xyz;
-        float3 v1Local = mul(unity_WorldToObject, float4(input[1].position.xyz, 1)).xyz;
-        float3 v2Local = mul(unity_WorldToObject, float4(input[2].position.xyz, 1)).xyz;
+        float3 v0Local = mul(unity_WorldToObject, float4(worldInput[0].position.xyz, 1)).xyz;
+        float3 v1Local = mul(unity_WorldToObject, float4(worldInput[1].position.xyz, 1)).xyz;
+        float3 v2Local = mul(unity_WorldToObject, float4(worldInput[2].position.xyz, 1)).xyz;
 
         float skewLocal = abs(v1Local.x - v0Local.x);
         float widthLocal = abs(v2Local.x - v1Local.x);
         float heightLocal = abs(v1Local.y - v0Local.y);
         float xLocal = min(v0Local.x, v2Local.x);
         float yLocal = min(v0Local.y, v1Local.y);
-        float4 boundariesLocal = float4(xLocal, yLocal, widthLocal, heightLocal);
+        float4 boundsLocal = float4(xLocal, yLocal, widthLocal, heightLocal);
 
         // TODO: What is this?
-        float4 boundariesLocalZ = float4(-depth, 0, skewLocal, skewUV);
+        float4 boundsLocalZ = float4(-depth, 0, skewLocal, skewUV);
 
-        FillGeometry(input, triStream, def, extrusion,
-                     boundariesUV, boundariesLocal, boundariesLocalZ);
+        FillGeometry(worldInput, triStream, baseOffset, worldExtrusion,
+                     boundsUV, boundsLocal, boundsLocalZ);
       }
 
       pixel_t PixShader(tmp_plus_g2f input) {
         UNITY_SETUP_INSTANCE_ID(input);
 
         pixel_t o;
-        o.color = _Color;
+        // o.color = _Color;
+        o.color = fixed4(input.atlas.xy, 0, 1);
         o.depth = 0;
 
         // float bold = step(input.tmp.y, 0);
