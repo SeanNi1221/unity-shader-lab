@@ -23,6 +23,15 @@ public class TMP_UltraHandler : MonoBehaviour {
 
   private void OnEnable() {
     _tmp = GetComponent<TMP_Text>();
+
+    // Enables the UV2 channel to be set by this script.
+    if (_tmp is TextMeshProUGUI tmpUGUI) {
+      var canvas = GetComponentInParent<Canvas>();
+      if (canvas) {
+        canvas.additionalShaderChannels |= AdditionalCanvasShaderChannels.TexCoord2;
+      }
+    }
+
     TMPro_EventManager.TEXT_CHANGED_EVENT.Add(OnTextChanged);
   }
 
@@ -57,16 +66,6 @@ public class TMP_UltraHandler : MonoBehaviour {
   }
 
   private void UpdateVertUVs() {
-    // Debugs transform
-    {
-      string prefix = _tmp is TextMeshProUGUI ? "UI_" : "World_";
-      Debug.Log($"{prefix}world position: {transform.position}");
-      Debug.Log($"{prefix}local position: {transform.localPosition}");
-      Debug.Log($"{prefix}world scale: {transform.lossyScale}");
-      Debug.Log($"{prefix}local scale: {transform.localScale}");
-
-    }
-
     var count = Mathf.Min(_ultraCharInfos.Count, _tmp.textInfo.characterCount);
 
     for (int i = 0; i < _tmp.textInfo.meshInfo.Length; i++) {
@@ -77,6 +76,10 @@ public class TMP_UltraHandler : MonoBehaviour {
         continue;
       }
 
+      // ==========================================================================================
+      // TODO: Confirm if the UV2 is available for this purpose since the source code uses
+      // TMP_Vertex.uv2 massively.
+      // ==========================================================================================
       _cachedVertUVs.Clear();
       mesh.SetUVs(2, _cachedVertUVs);
 
@@ -98,15 +101,6 @@ public class TMP_UltraHandler : MonoBehaviour {
         if (iLastCharVert > iCharVert) {
           // Debug.Log($"---------vertex index not match: last({iLastCharVert}) to current({iCharVert}), Char[{iChar}]: {charInfo.character}");
           continue;
-        }
-
-        // Debugs UV0
-        {
-          var charUV0 = new Vector4[4];
-          for (int iVert = 0; iVert < 4; iVert++) {
-            charUV0[iVert] = _cachedVertUVs[iCharVert + iVert];
-          }
-          Debug.Log($"Char[{iChar}]: {charInfo.character}, UV0: {charUV0[0]}, {charUV0[1]}, {charUV0[2]}, {charUV0[3]}");
         }
 
         iLastCharVert = iCharVert;
@@ -162,5 +156,6 @@ public class TMP_UltraHandler : MonoBehaviour {
 
       mesh.SetUVs(2, _cachedVertUVs);
     }
+    _tmp.UpdateVertexData(TMP_VertexDataUpdateFlags.Uv2);
   }
 }

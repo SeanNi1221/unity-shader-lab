@@ -98,11 +98,11 @@ Shader "TextMeshPro/Ultra/Simple" {
         // ========================================================
         // TODO: The problem for UGUI is in the depth passing
 
-        // float depth = worldInput[0].uv2.x;
+        float depth = worldInput[0].uv2.x;
 
         // ========================================================
 
-        float depth = 20;
+        // float depth = 20;
 
         // World space, assumes that all worldInput normals are the same
         float3 worldExtrusion = worldInput[0].normal * depth;
@@ -137,8 +137,8 @@ Shader "TextMeshPro/Ultra/Simple" {
         UNITY_SETUP_INSTANCE_ID(input);
 
         pixel_t o;
-        // o.color = _Color;
-        o.color = fixed4(input.atlas.xy, 0, 1);
+        o.color = _Color;
+        // o.color = fixed4(input.tmpUltra.xy, 0, 1);
         o.depth = 0;
 
         // float bold = step(input.tmp.y, 0);

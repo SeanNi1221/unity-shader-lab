@@ -1,7 +1,8 @@
 {
     "files.associations": {
-        "*.cginc": "hlsl",
-        "*.hlsl": "hlsl"
+        "*.shader": "UnityShader",
+        "*.cginc": "UnityShader",
+        "*.hlsl": "UnityShader"
     },
     "files.exclude": {
         "**/.DS_Store": true,
