@@ -77,8 +77,7 @@ public class TMP_UltraHandler : MonoBehaviour {
       }
 
       // ==========================================================================================
-      // TODO: Confirm if the UV2 is available for this purpose since the source code uses
-      // TMP_Vertex.uv2 massively.
+      // TODO: It is likely that UV2 is used internally by TMP.
       // ==========================================================================================
       _cachedVertUVs.Clear();
       mesh.SetUVs(2, _cachedVertUVs);

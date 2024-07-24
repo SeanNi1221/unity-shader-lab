@@ -12,7 +12,7 @@ uniform float     _WeightBold;
 uniform float     _WeightNormal;
 
 // 3D
-sampler2D         _DepthColor;
+sampler2D         _DepthTex;
 
 // Outline
 uniform fixed4    _OutlineColor;
@@ -20,8 +20,8 @@ uniform float     _OutlineWidth;
 
 // Font Atlas properties
 uniform sampler2D _MainTex;
-uniform float     _textureWidth;
-uniform float     _textureHeight;
+uniform float     _TextureWidth;
+uniform float     _TextureHeight;
 uniform float     _GradientScale;
 
 // TMP Internal
@@ -78,11 +78,18 @@ struct pixel_t {
 // Functions
 // =================================================================================================
 float ComputeDepth(float4 clipPos) {
+
+  // TODO: Verify if this is enough without SHADER_API_GLES and SHADER_API_GLES3
   #if defined(SHADER_TARGET_GLSL)
-    return (clipPos.z / clipPos.w) * 0.5 + 0.5;
+
+  return (clipPos.z / clipPos.w) * 0.5 + 0.5;
   #else
     return clipPos.z / clipPos.w;
   #endif
+}
+
+float InverseLerp(float a, float b, float value) {
+  return saturate((value - a) / (b - a));
 }
 
 tmp_plus_g2f CreateVertex(tmp_plus_v2g worldInput, float3 worldOffset,

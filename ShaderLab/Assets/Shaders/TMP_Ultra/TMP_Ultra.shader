@@ -5,12 +5,11 @@ Shader "TextMeshPro/Ultra/Simple" {
     _FaceTex        ("Face Texture", 2D) = "white" {}
     _Color          ("Color", Color) = (1,1,1,1)
 
-    _WeightNormal		("Weight Normal", float) = 0
-    _WeightBold			("Weight Bold", float) = 0.5
+    _WeightNormal		("Weight Normal", float) = 0.5
+    _WeightBold			("Weight Bold", float) = 0.75
 
     // 3D
     _MinStep        ("Raymarch Min Step", Range(0.001, 0.1)) = 0.01
-    _DepthColor     ("Depth Color", Color) = (.25, .5, .5, 1)
     _DepthTex       ("Depth Texture", 2D) = "white" {}
 
     // Outline
@@ -66,7 +65,11 @@ Shader "TextMeshPro/Ultra/Simple" {
       #pragma require geometry
 
       #include "UnityCG.cginc"
+
+      // TODO: Remove the dependency on Common.hlsl
       #include "Common.hlsl"
+
+      #include "Raymarch.hlsl"
 
       #define MAX_STEPS 128
 
@@ -85,8 +88,6 @@ Shader "TextMeshPro/Ultra/Simple" {
       }
 
       // Extrudes the TMP quads
-      //
-      // TODO: Clarify - No shared vertices?
       [maxvertexcount(24)]
       void GeomShader(triangle tmp_plus_v2g worldInput[3],
                       inout TriangleStream<tmp_plus_g2f> triStream) {
@@ -137,18 +138,42 @@ Shader "TextMeshPro/Ultra/Simple" {
         UNITY_SETUP_INSTANCE_ID(input);
 
         pixel_t o;
-        o.color = _Color;
-        // o.color = fixed4(input.tmpUltra.xy, 0, 1);
+        o.color = 0;
         o.depth = 0;
 
-        // float bold = step(input.tmp.y, 0);
-        // float edge = lerp(_WeightNormal, _WeightBold, bold);
-        // edge += _OutlineWidth;
+        float bold = step(input.tmp.y, 0); // original uv1.y
+        float edge = lerp(_WeightNormal, _WeightBold, bold); // choose between normal and bold
 
-        // float charDepth = input.tmpUltra.x;
-        // float2 depthMapped = input.tmpUltra.yz;
+        float charDepth = input.tmpUltra.x;
+        float2 depthMapped = input.tmpUltra.yz;
 
-        return ValidatePixel(o, 0);
+        InitializeRaymarcher(input);
+
+        for (int i = 0; i <= MAX_STEPS; i++) {
+          NextRaymarch(edge);
+          float3 localPos = GetRaymarchLocalPos();
+          float3 mask = GetRaymarchMask();
+          float bound = GetRaymarchBound();
+          float sample = GetRaymarchSample();
+
+          clip(bound);
+
+          if (sample <= edge) {
+            float depth = -localPos.z;
+            float tProgress = saturate(InverseLerp(0, charDepth, depth));
+            float progress = saturate(lerp(depthMapped.x, depthMapped.y, tProgress));
+            float3 depthColor = tex2D(_DepthTex, float2(progress, 0.5)) * _Color.rgb;
+            float3 faceColor = tex2D(_FaceTex, localPos.xy * _FaceTex_ST.xy - _FaceTex_ST.zw);
+            depthColor *= faceColor;
+
+            o.depth = ComputeDepth(UnityObjectToClipPos(localPos));
+            o.color = float4(depthColor * input.color, 1);
+            return ValidatePixel(o, i);
+          }
+        }
+
+        clip(-1);
+        return ValidatePixel(o, MAX_STEPS);
       }
       ENDCG
     }
