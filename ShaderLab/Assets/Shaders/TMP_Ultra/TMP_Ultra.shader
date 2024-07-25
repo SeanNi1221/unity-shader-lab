@@ -56,7 +56,7 @@ Shader "TextMeshPro/Ultra/Simple" {
       #pragma target 3.0
       #pragma vertex VertShader
       #pragma geometry GeomShader
-      #pragma fragment PixShader
+      #pragma fragment PixShader_Debug
 
       #pragma shader_feature __ OUTLINE_ON
       #pragma shader_feature __ MAXSTEPS_128
@@ -108,30 +108,51 @@ Shader "TextMeshPro/Ultra/Simple" {
         // World space, assumes that all worldInput normals are the same
         float3 worldExtrusion = worldInput[0].normal * depth;
 
-        float skewUV = abs(worldInput[1].uv0.x - worldInput[0].uv0.x);
-        float widthUV = abs(worldInput[2].uv0.x - worldInput[1].uv0.x);
-        float heightUV = abs(worldInput[1].uv0.y - worldInput[0].uv0.y);
-        float xUV = min(worldInput[0].uv0.x, worldInput[2].uv0.x);
-        float yUV = min(worldInput[0].uv0.y, worldInput[1].uv0.y);
-        float4 boundsUV = float4(xUV, yUV, widthUV, heightUV);
-
-        // World to local positions
         float3 v0Local = mul(unity_WorldToObject, float4(worldInput[0].position.xyz, 1)).xyz;
         float3 v1Local = mul(unity_WorldToObject, float4(worldInput[1].position.xyz, 1)).xyz;
         float3 v2Local = mul(unity_WorldToObject, float4(worldInput[2].position.xyz, 1)).xyz;
-
-        float skewLocal = abs(v1Local.x - v0Local.x);
         float widthLocal = abs(v2Local.x - v1Local.x);
         float heightLocal = abs(v1Local.y - v0Local.y);
         float xLocal = min(v0Local.x, v2Local.x);
         float yLocal = min(v0Local.y, v1Local.y);
         float4 boundsLocal = float4(xLocal, yLocal, widthLocal, heightLocal);
 
+        float widthUV = abs(worldInput[2].uv0.x - worldInput[1].uv0.x);
+        float heightUV = abs(worldInput[1].uv0.y - worldInput[0].uv0.y);
+        float xUV = min(worldInput[0].uv0.x, worldInput[2].uv0.x);
+        float yUV = min(worldInput[0].uv0.y, worldInput[1].uv0.y);
+        float4 boundsUV = float4(xUV, yUV, widthUV, heightUV);
+
         // TODO: What is this?
+        float skewLocal = abs(v1Local.x - v0Local.x);
+        float skewUV = abs(worldInput[1].uv0.x - worldInput[0].uv0.x);
         float4 boundsLocalZ = float4(-depth, 0, skewLocal, skewUV);
 
         FillGeometry(worldInput, triStream, baseOffset, worldExtrusion,
                      boundsUV, boundsLocal, boundsLocalZ);
+      }
+
+      pixel_t PixShader_Debug(tmp_plus_g2f input) {
+        UNITY_SETUP_INSTANCE_ID(input);
+
+        pixel_t o;
+        o.color = 0;
+        o.depth = 0;
+
+        float bold = step(input.tmp.y, 0); // original uv1.y
+        float edge = lerp(_WeightNormal, _WeightBold, bold); // choose between normal and bold
+
+        float charDepth = input.tmpUltra.x;
+        float2 depthMapped = input.tmpUltra.yz;
+
+        InitializeRaymarcher(input);
+
+        for (int i = 0; i <= 40; i++) {
+          NextRaymarch_Debug(edge);
+        }
+
+        o.color = float4(normalize(_currPos), 1);
+        return o;
       }
 
       pixel_t PixShader(tmp_plus_g2f input) {
@@ -151,10 +172,10 @@ Shader "TextMeshPro/Ultra/Simple" {
 
         for (int i = 0; i <= MAX_STEPS; i++) {
           NextRaymarch(edge);
-          float3 localPos = GetRaymarchLocalPos();
-          float3 mask = GetRaymarchMask();
-          float bound = GetRaymarchBound();
-          float sample = GetRaymarchSample();
+          float3 localPos = _currPos;
+          float3 mask = _currMask;
+          float bound = _currBound;
+          float sample = _currSample;
 
           clip(bound);
 

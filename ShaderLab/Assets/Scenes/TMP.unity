@@ -122,6 +122,67 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!21 &99762329
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: NotoSansSC-Black Atlas Material (Instance)
+  m_Shader: {fileID: 4800000, guid: d4de5136258afe64abe969264047e41b, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _DepthTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _FaceTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: -2244134469639737964, guid: d318f781426432248acf1ee8bd0d9ac4,
+          type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _GradientScale: 10
+    - _MinStep: 0.01
+    - _OutlineSoftness: 0
+    - _OutlineWidth: 0
+    - _PerspectiveFilter: 0.875
+    - _ScaleRatioA: 1
+    - _ScaleRatioB: 1
+    - _ScaleRatioC: 1
+    - _ScaleX: 1
+    - _ScaleY: 1
+    - _Sharpness: 0
+    - _TextureHeight: 1024
+    - _TextureWidth: 1024
+    - _WeightBold: 0.75
+    - _WeightNormal: 0.5
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Debug_MaxBounds: {r: 108.72083, g: 9.784166, b: 0, a: 0}
+    - _Debug_MinBounds: {r: 0, g: -2.620001, b: 0, a: 0}
+    - _Debug_WorldMaxBounds: {r: 0, g: 45.834167, b: 0, a: 0}
+    - _Debug_WorldMinBounds: {r: -299.81876, g: 0, b: 0, a: 0}
+    - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
+  m_BuildTextureStacks: []
 --- !u!21 &142713037
 Material:
   serializedVersion: 8
@@ -581,10 +642,9 @@ MonoBehaviour:
   m_text: TMP Ultra Sample
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: d318f781426432248acf1ee8bd0d9ac4, type: 2}
-  m_sharedMaterial: {fileID: -8478635794213931440, guid: d318f781426432248acf1ee8bd0d9ac4,
-    type: 2}
+  m_sharedMaterial: {fileID: 99762329}
   m_fontSharedMaterials: []
-  m_fontMaterial: {fileID: 0}
+  m_fontMaterial: {fileID: 99762329}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
@@ -671,7 +731,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -8478635794213931440, guid: d318f781426432248acf1ee8bd0d9ac4, type: 2}
+  - {fileID: 99762329}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -709,9 +769,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 221, y: -80}
-  m_SizeDelta: {x: 600, y: 100}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -45.6, y: -54.5}
+  m_SizeDelta: {x: 125, y: 27.9}
+  m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &1170408563
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -725,7 +785,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _tmp: {fileID: 1170408560}
-  _defaultDepth: 3.23
+  _defaultDepth: 1.63
 --- !u!1 &1343921028
 GameObject:
   m_ObjectHideFlags: 0
@@ -1068,9 +1128,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -44, y: 174}
-  m_SizeDelta: {x: 1200, y: 100}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -631.9999, y: 128}
+  m_SizeDelta: {x: 1200, y: 417.40002}
+  m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &1820098073
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1094,10 +1154,9 @@ MonoBehaviour:
   m_text: TMP Ultra UGUI Sample
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: d318f781426432248acf1ee8bd0d9ac4, type: 2}
-  m_sharedMaterial: {fileID: -8478635794213931440, guid: d318f781426432248acf1ee8bd0d9ac4,
-    type: 2}
+  m_sharedMaterial: {fileID: 1932474647}
   m_fontSharedMaterials: []
-  m_fontMaterial: {fileID: 0}
+  m_fontMaterial: {fileID: 1932474647}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
@@ -1183,6 +1242,67 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _tmp: {fileID: 1820098073}
   _defaultDepth: 26.2
+--- !u!21 &1932474647
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: NotoSansSC-Black Atlas Material (Instance)
+  m_Shader: {fileID: 4800000, guid: d4de5136258afe64abe969264047e41b, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _DepthTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _FaceTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: -2244134469639737964, guid: d318f781426432248acf1ee8bd0d9ac4,
+          type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _GradientScale: 10
+    - _MinStep: 0.01
+    - _OutlineSoftness: 0
+    - _OutlineWidth: 0
+    - _PerspectiveFilter: 0.875
+    - _ScaleRatioA: 1
+    - _ScaleRatioB: 1
+    - _ScaleRatioC: 1
+    - _ScaleX: 1
+    - _ScaleY: 1
+    - _Sharpness: 0
+    - _TextureHeight: 1024
+    - _TextureWidth: 1024
+    - _WeightBold: 0.75
+    - _WeightNormal: 0.5
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Debug_MaxBounds: {r: 999.6667, g: 164.26443, b: 0, a: 0}
+    - _Debug_MinBounds: {r: 0, g: -153.39072, b: 0, a: 0}
+    - _Debug_WorldMaxBounds: {r: 399.6667, g: 5.564453, b: 0, a: 0}
+    - _Debug_WorldMinBounds: {r: -598.06665, g: -312.0907, b: 0, a: 0}
+    - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
+  m_BuildTextureStacks: []
 --- !u!1 &2073345893
 GameObject:
   m_ObjectHideFlags: 0
@@ -1292,5 +1412,5 @@ SceneRoots:
   m_Roots:
   - {fileID: 832575519}
   - {fileID: 410087041}
-  - {fileID: 330585546}
   - {fileID: 2073345897}
+  - {fileID: 330585546}

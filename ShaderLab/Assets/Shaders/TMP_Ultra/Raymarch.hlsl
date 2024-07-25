@@ -3,6 +3,9 @@
 
 #include "Common.hlsl"
 
+// Strange fact: for TextMeshProUGUI, Object space is relative to the canvas, not the object
+// https://stackoverflow.com/questions/55641879/how-to-get-object-space-in-a-shader-from-an-ui-image-disablebatching-does-not-s
+
 float _MinStep;
 
 tmp_plus_g2f _input;
@@ -16,22 +19,6 @@ float _currBound;
 float _currSample;
 
 // TODO: Consider using out parameters instead of returning private fields
-
-float3 GetRaymarchLocalPos() {
-  return _currPos;
-}
-
-float3 GetRaymarchMask() {
-  return _currMask;
-}
-
-float GetRaymarchBound() {
-  return _currBound;
-}
-
-float GetRaymarchSample() {
-  return _currSample;
-}
 
 void InitializeRaymarcher(tmp_plus_g2f input) {
 
@@ -58,10 +45,26 @@ void NextRaymarch(float edge) {
   // Mask
   float tY = InverseLerp(_input.boundsLocal.y, _input.boundsLocal.y + _input.boundsLocal.w,
     _currPos.y);
-  float deltaX = saturate(tY) * _input.boundsLocalZ.z; // SkewLocal
-  float tX = InverseLerp(_input.boundsLocal.x, _input.boundsLocal.x + _input.boundsLocal.z,
-    _currPos.x - deltaX);
-  float tZ = InverseLerp(_input.boundsLocalZ.x, _input.boundsLocalZ.y, _currPos.z);
+
+    // `dx = y * s/h` in the oblique triangle. The sample value of the x should be the projection by the 
+
+  /*
+             h
+           /\
+          /  \
+         /    \ X
+        /     /\
+       /     /  \
+      /     /    \
+     --------------
+           pX     w
+
+    px = x - y * skew/h = 
+  */
+  float pX = _currentPos.x - saturate(tY) * _input.boundsLocalZ.z;
+  float tX = InverseLerp(_input.boundsLocal.x, _input.boundsLocal.x + _input.boundsLocal.z, pX);
+
+    float tZ = InverseLerp(_input.boundsLocalZ.x, _input.boundsLocalZ.y, _currPos.z);
   _currMask = float3(tX, tY, tZ);
 
   // Bound
@@ -95,5 +98,17 @@ void NextRaymarch(float edge) {
   float ratio = distance / length(_viewDir.xy);
 
   _currProgress += max(length(_viewDir) * ratio, _MinStep);
+}
+
+void NextRaymarch_Debug(float edge) {
+  // Pos
+  _currPos = _startPos + _viewDir * _currProgress;
+  
+  // Mask
+  float tY = InverseLerp(_input.boundsLocal.y, _input.boundsLocal.y + _input.boundsLocal.w,
+    _currPos.y);
+  float deltaX = saturate(tY) * _input.boundsLocalZ.z; // SkewLocal
+
+  _currProgress += _MinStep;
 }
 #endif
