@@ -151,7 +151,7 @@ Shader "TextMeshPro/Ultra/Simple" {
           NextRaymarch_Debug(edge);
         }
 
-        o.color = float4(normalize(_currPos), 1);
+        o.color = float4(0, 0, _currMask.z, 1);
         return o;
       }
 

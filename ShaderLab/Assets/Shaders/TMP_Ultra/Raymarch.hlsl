@@ -43,45 +43,50 @@ void NextRaymarch(float edge) {
   _currPos = _startPos + _viewDir * _currProgress;
 
   // Mask
-  float tY = InverseLerp(_input.boundsLocal.y, _input.boundsLocal.y + _input.boundsLocal.w,
+  //
+  // tx, ty, tz are the normalized coordinates of the _currPos in the 3d bounds of the triangle.
+  float ty = InverseLerp(_input.boundsLocal.y, _input.boundsLocal.y + _input.boundsLocal.w,
     _currPos.y);
 
-    // `dx = y * s/h` in the oblique triangle. The sample value of the x should be the projection by the 
-
   /*
-             h
-           /\
-          /  \
-         /    \ X
-        /     /\
-       /     /  \
-      /     /    \
-     --------------
-           pX     w
+            v1 _____________
+           / \           |
+          /   \          |
+         /     \ ______  h
+        /     /|\     |  |
+       /     / | \    y  |
+      /     /  |  \   |  |
+    v0-------------v2-----
+     | px  | dx|   |
+     |--- x ---|   |
+     |----- w -----|
 
-    px = x - y * skew/h = 
+  skew = v1.x - v0.x
+  dx = y * skew/h = y/h * skew = ty * skew
+  px = x - dx
   */
-  float pX = _currentPos.x - saturate(tY) * _input.boundsLocalZ.z;
-  float tX = InverseLerp(_input.boundsLocal.x, _input.boundsLocal.x + _input.boundsLocal.z, pX);
+  float dx = saturate(ty) * _input.boundsLocalZ.z;
+  float px = _currPos.x - dx;
+  float tx = InverseLerp(_input.boundsLocal.x, _input.boundsLocal.x + _input.boundsLocal.z, px);
 
-    float tZ = InverseLerp(_input.boundsLocalZ.x, _input.boundsLocalZ.y, _currPos.z);
-  _currMask = float3(tX, tY, tZ);
+  float tz = InverseLerp(_input.boundsLocalZ.x, _input.boundsLocalZ.y, _currPos.z);
+  _currMask = float3(tx, ty, tz);
 
   // Bound
   //
   // TODO: Isn't this always 0?
   //
-  // Distance to the nearest bound
-  float clipX = -(abs(tX - 0.5) - 0.5) + 0.01;
-  float clipY = -(abs(tY - 0.5) - 0.5) + 0.01;
-  float clipZ = -(abs(tZ - 0.5) - 0.5) + 0.01;
+  // clipX, clipY, clipZ are normalized distances of the _currPos to the nearest bound.
+  float clipX = -(abs(tx - 0.5) - 0.5) + 0.01;
+  float clipY = -(abs(ty - 0.5) - 0.5) + 0.01;
+  float clipZ = -(abs(tz - 0.5) - 0.5) + 0.01;
   _currBound = min(0, min(clipX, min(clipY, clipZ)));
 
   // Sample
   float maskU = saturate(lerp(_input.boundsUV.x, _input.boundsUV.x + _input.boundsUV.z,
-      saturate(tX)));
+      saturate(tx)));
   float maskV = saturate(lerp(_input.boundsUV.y, _input.boundsUV.y + _input.boundsUV.w,
-      saturate(tY)));
+      saturate(ty)));
   _currSample = 1 - tex2D(_MainTex, float2(maskU, maskV)).a;
 
   // Distance
@@ -103,11 +108,49 @@ void NextRaymarch(float edge) {
 void NextRaymarch_Debug(float edge) {
   // Pos
   _currPos = _startPos + _viewDir * _currProgress;
-  
-  // Mask
-  float tY = InverseLerp(_input.boundsLocal.y, _input.boundsLocal.y + _input.boundsLocal.w,
+
+  // Mask - Normalized position of the _currPos in the 3d bounds of the triangle.
+  //
+  //
+  float ty = InverseLerp(_input.boundsLocal.y, _input.boundsLocal.y + _input.boundsLocal.w,
     _currPos.y);
-  float deltaX = saturate(tY) * _input.boundsLocalZ.z; // SkewLocal
+
+  /*
+            v1 _____________
+           / \           |
+          /   \          |
+         /     \ ______  h
+        /     /|\     |  |
+       /     / | \    y  |
+      /     /  |  \   |  |
+    v0-------------v2-----
+     | px  | dx|   |
+     |--- x ---|   |
+     |----- w -----|
+
+  skew = v1.x - v0.x
+  dx = y * skew/h = y/h * skew = ty * skew
+  px = x - dx
+  */
+  float dx = saturate(ty) * _input.boundsLocalZ.z;
+  float px = _currPos.x - dx;
+  float tx = InverseLerp(_input.boundsLocal.x, _input.boundsLocal.x + _input.boundsLocal.z, px);
+
+  // TODO: For TextMeshPro, the tz is as exprected. But for TextMeshProUGUI, the tz is affected by
+  // the `local position z` of the object (because for an UI object, the object space is relative to
+  // the canvas instead of the object). To ensure the compatibility, we added the _startPos.z here.
+  // Verify if this is correct.
+  float tz = InverseLerp(_input.boundsLocalZ.x, _input.boundsLocalZ.y, _currPos.z);
+  _currMask = float3(tx, ty, tz);
+
+  // Bound - Minimum normalized distance of the _currPos to the nearest bound.
+  //
+  // TODO: Isn't this always 0?
+  //
+  float clipX = -(abs(tx - 0.5) - 0.5) + 0.01;
+  float clipY = -(abs(ty - 0.5) - 0.5) + 0.01;
+  float clipZ = -(abs(tz - 0.5) - 0.5) + 0.01;
+  _currBound = min(0, min(clipX, min(clipY, clipZ)));
 
   _currProgress += _MinStep;
 }
