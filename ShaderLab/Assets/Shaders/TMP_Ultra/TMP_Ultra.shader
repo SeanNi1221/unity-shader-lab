@@ -96,14 +96,10 @@ Shader "TextMeshPro/Ultra/Simple" {
 
         float3 baseOffset = float3(0, 0, 0);
 
-        // ========================================================
-        // TODO: The problem for UGUI is in the depth passing
-
+        // TODO: Consider removing this from uv2 and use a property instead. The canvas additional
+        // shader channels are needed for this, and we don't know if this conflicts with the
+        // internal TMP behaviours.
         float depth = worldInput[0].uv2.x;
-
-        // ========================================================
-
-        // float depth = 20;
 
         // World space, assumes that all worldInput normals are the same
         float3 worldExtrusion = worldInput[0].normal * depth;
@@ -123,10 +119,14 @@ Shader "TextMeshPro/Ultra/Simple" {
         float yUV = min(worldInput[0].uv0.y, worldInput[1].uv0.y);
         float4 boundsUV = float4(xUV, yUV, widthUV, heightUV);
 
-        // TODO: What is this?
+        // TODO: For For TextMeshProUGUI, as an UI object, the object space is relative to the
+        // canvas instead of the object. To ensure the compatibility, we added the zLocal here.
+        // Verify if this is correct.
+        float zLocal = min(v0Local.z, v1Local.z);
+
         float skewLocal = abs(v1Local.x - v0Local.x);
         float skewUV = abs(worldInput[1].uv0.x - worldInput[0].uv0.x);
-        float4 boundsLocalZ = float4(-depth, 0, skewLocal, skewUV);
+        float4 boundsLocalZ = float4(zLocal - depth, zLocal, skewLocal, skewUV);
 
         FillGeometry(worldInput, triStream, baseOffset, worldExtrusion,
                      boundsUV, boundsLocal, boundsLocalZ);
