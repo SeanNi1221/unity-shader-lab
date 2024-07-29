@@ -15,8 +15,8 @@ float3 _startPos;
 float _currProgress;
 float3 _currPos;
 float3 _currMask;
-float _currBound;
-float _currSample;
+float _currIsInBound;
+float _currSampleAlpha;
 
 // TODO: Consider using out parameters instead of returning private fields
 
@@ -80,14 +80,14 @@ void NextRaymarch(float edge) {
   float clipX = -(abs(tx - 0.5) - 0.5) + 0.01;
   float clipY = -(abs(ty - 0.5) - 0.5) + 0.01;
   float clipZ = -(abs(tz - 0.5) - 0.5) + 0.01;
-  _currBound = min(0, min(clipX, min(clipY, clipZ)));
+  _currIsInBound = min(0, min(clipX, min(clipY, clipZ)));
 
   // Sample
   float maskU = saturate(lerp(_input.boundsUV.x, _input.boundsUV.x + _input.boundsUV.z,
       saturate(tx)));
   float maskV = saturate(lerp(_input.boundsUV.y, _input.boundsUV.y + _input.boundsUV.w,
       saturate(ty)));
-  _currSample = 1 - tex2D(_MainTex, float2(maskU, maskV)).a;
+  _currSampleAlpha = 1 - tex2D(_MainTex, float2(maskU, maskV)).a;
 
   // Distance
   //
@@ -98,7 +98,7 @@ void NextRaymarch(float edge) {
   float localM = _input.boundsLocal.w * gradientRelative;
   float minM = -(localM * edge);
   float maxM = localM * (1 - edge);
-  distance = lerp(minM, maxM, _currSample);
+  distance = lerp(minM, maxM, _currSampleAlpha);
 
   float ratio = distance / length(_viewDir.xy);
 
@@ -143,15 +143,26 @@ void NextRaymarch_Debug(float edge) {
   float tz = InverseLerp(_input.boundsLocalZ.x, _input.boundsLocalZ.y, _currPos.z);
   _currMask = float3(tx, ty, tz);
 
-  // Bound - Minimum normalized distance of the _currPos to the nearest bound.
-  //
-  // TODO: Isn't this always 0?
-  //
+  // Bound
   float clipX = -(abs(tx - 0.5) - 0.5) + 0.01;
   float clipY = -(abs(ty - 0.5) - 0.5) + 0.01;
   float clipZ = -(abs(tz - 0.5) - 0.5) + 0.01;
-  _currBound = min(0, min(clipX, min(clipY, clipZ)));
+  _currIsInBound = min(0, min(clipX, min(clipY, clipZ)));
 
-  _currProgress += _MinStep;
+  // Sample
+  float maskU = saturate(lerp(_input.boundsUV.x, _input.boundsUV.x + _input.boundsUV.z,
+      saturate(tx)));
+  float maskV = saturate(lerp(_input.boundsUV.y, _input.boundsUV.y + _input.boundsUV.w,
+      saturate(ty)));
+  float alpha = tex2D(_MainTex, float2(maskU, maskV)).a;
+  _currSampleAlpha = 1 - alpha;
+
+  // TODO: What is this?
+  float sdfDistance = 1;
+
+  // TODO: Why?
+  float step = length(_viewDir) * sdfDistance / length(_viewDir.xy);
+
+  _currProgress += max(step, _MinStep);
 }
 #endif

@@ -71,7 +71,7 @@ Shader "TextMeshPro/Ultra/Simple" {
 
       #include "Raymarch.hlsl"
 
-      #define MAX_STEPS 128
+      #define MAX_STEPS 32
 
       tmp_plus_v2g VertShader(tmp_plus_a2v input) {
 
@@ -147,11 +147,26 @@ Shader "TextMeshPro/Ultra/Simple" {
 
         InitializeRaymarcher(input);
 
-        for (int i = 0; i <= 40; i++) {
+        for (int i = 0; i <= 1; i++) {
           NextRaymarch_Debug(edge);
+
+          clip(_currIsInBound);
+
+          if (_currSampleAlpha <= edge) {
+            // TODO: Convert between world and object space for _currPos
+            float progress = saturate(InverseLerp(0, charDepth, -_currPos.z));
+            progress = saturate(lerp(depthMapped.x, depthMapped.y, progress));
+            float3 depthColor = tex2D(_DepthTex, float2(progress, 0.5)) * _Color.rgb;
+            float3 faceColor = tex2D(_FaceTex, _currPos.xy * _FaceTex_ST.xy - _FaceTex_ST.zw);
+            depthColor *= faceColor;
+
+            o.depth = ComputeDepth(UnityObjectToClipPos(_currPos));
+            o.color = float4(depthColor * input.color, 1);
+            return o;
+          }
         }
 
-        o.color = float4(0, 0, _currMask.z, 1);
+        clip(-1);
         return o;
       }
 
@@ -174,8 +189,8 @@ Shader "TextMeshPro/Ultra/Simple" {
           NextRaymarch(edge);
           float3 localPos = _currPos;
           float3 mask = _currMask;
-          float bound = _currBound;
-          float sample = _currSample;
+          float bound = _currIsInBound;
+          float sample = _currSampleAlpha;
 
           clip(bound);
 
