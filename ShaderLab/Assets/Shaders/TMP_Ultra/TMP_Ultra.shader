@@ -147,8 +147,11 @@ Shader "TextMeshPro/Ultra/Simple" {
 
         InitializeRaymarcher(input);
 
-        for (int i = 0; i <= 1; i++) {
+        for (int i = 0; i <= MAX_STEPS; i++) {
           NextRaymarch_Debug(edge);
+
+          o.color = float4(_currMask.zzz, 1);
+          return o;
 
           clip(_currIsInBound);
 

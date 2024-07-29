@@ -144,9 +144,9 @@ void NextRaymarch_Debug(float edge) {
   _currMask = float3(tx, ty, tz);
 
   // Bound
-  float clipX = -(abs(tx - 0.5) - 0.5) + 0.01;
-  float clipY = -(abs(ty - 0.5) - 0.5) + 0.01;
-  float clipZ = -(abs(tz - 0.5) - 0.5) + 0.01;
+  float clipX = (0.5 - abs(tx - 0.5)) + 0.01;
+  float clipY = (0.5 - abs(ty - 0.5)) + 0.01;
+  float clipZ = (0.5 - abs(tz - 0.5)) + 0.01;
   _currIsInBound = min(0, min(clipX, min(clipY, clipZ)));
 
   // Sample
