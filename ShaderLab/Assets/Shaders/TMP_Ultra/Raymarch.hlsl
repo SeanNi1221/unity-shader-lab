@@ -1,8 +1,6 @@
 #ifndef  RAYMARCH
 #define  RAYMARCH
 
-#include "Common.hlsl"
-
 // Strange fact: for TextMeshProUGUI, Object space is relative to the canvas, not the object
 // https://stackoverflow.com/questions/55641879/how-to-get-object-space-in-a-shader-from-an-ui-image-disablebatching-does-not-s
 
@@ -32,22 +30,14 @@ void InitializeRaymarcher(tmp_plus_g2f input) {
   //
   // https://blog.lidia-martinez.com/transformation-matrices-spaces-linear-algebra-unity
   _startPos = mul(unity_WorldToObject, float4(input.worldPos.xyz, 1));
-
   _viewDir = mul((float3x3)unity_WorldToObject, viewDir);
+
   _currProgress = 0;
   _input = input;
 }
 
-void NextRaymarch(float edge) {
-  // Pos
-  _currPos = _startPos + _viewDir * _currProgress;
-
-  // Mask
-  //
+float3 PositionToMask(float3 localPos, tmp_plus_g2f input) {
   // tx, ty, tz are the normalized coordinates of the _currPos in the 3d bounds of the triangle.
-  float ty = InverseLerp(_input.boundsLocal.y, _input.boundsLocal.y + _input.boundsLocal.w,
-    _currPos.y);
-
   /*
             v1 _____________
            / \           |
@@ -65,103 +55,52 @@ void NextRaymarch(float edge) {
   dx = y * skew/h = y/h * skew = ty * skew
   px = x - dx
   */
-  float dx = saturate(ty) * _input.boundsLocalZ.z;
-  float px = _currPos.x - dx;
-  float tx = InverseLerp(_input.boundsLocal.x, _input.boundsLocal.x + _input.boundsLocal.z, px);
-
-  float tz = InverseLerp(_input.boundsLocalZ.x, _input.boundsLocalZ.y, _currPos.z);
-  _currMask = float3(tx, ty, tz);
-
-  // Bound
-  //
-  // TODO: Isn't this always 0?
-  //
-  // clipX, clipY, clipZ are normalized distances of the _currPos to the nearest bound.
-  float clipX = -(abs(tx - 0.5) - 0.5) + 0.01;
-  float clipY = -(abs(ty - 0.5) - 0.5) + 0.01;
-  float clipZ = -(abs(tz - 0.5) - 0.5) + 0.01;
-  _currIsInBound = min(0, min(clipX, min(clipY, clipZ)));
-
-  // Sample
-  float maskU = saturate(lerp(_input.boundsUV.x, _input.boundsUV.x + _input.boundsUV.z,
-      saturate(tx)));
-  float maskV = saturate(lerp(_input.boundsUV.y, _input.boundsUV.y + _input.boundsUV.w,
-      saturate(ty)));
-  _currSampleAlpha = 1 - tex2D(_MainTex, float2(maskU, maskV)).a;
-
-  // Distance
-  //
-  // TODO: What is this?
-  float distance = 0;
-  float gradientUV = _GradientScale / _TextureHeight;
-  float gradientRelative = gradientUV / _input.boundsUV.w;
-  float localM = _input.boundsLocal.w * gradientRelative;
-  float minM = -(localM * edge);
-  float maxM = localM * (1 - edge);
-  distance = lerp(minM, maxM, _currSampleAlpha);
-
-  float ratio = distance / length(_viewDir.xy);
-
-  _currProgress += max(length(_viewDir) * ratio, _MinStep);
+  float ty = InverseLerp(input.boundsLocal.y, input.boundsLocal.y + input.boundsLocal.w, localPos.y);
+  float dx = saturate(ty) * input.boundsLocalZ.z;
+  float tx = InverseLerp(input.boundsLocal.x, input.boundsLocal.x + input.boundsLocal.z,
+      localPos.x - dx);
+  float tz = InverseLerp(input.boundsLocalZ.x, input.boundsLocalZ.y, localPos.z);
+  return float3(tx, ty, tz);
 }
 
-void NextRaymarch_Debug(float edge) {
-  // Pos
-  _currPos = _startPos + _viewDir * _currProgress;
+float SampleSDFAlpha(float3 mask, tmp_plus_g2f input) {
+  float u = saturate(lerp(input.boundsUV.x, input.boundsUV.x + input.boundsUV.z, mask.x));
+  float v = saturate(lerp(input.boundsUV.y, input.boundsUV.y + input.boundsUV.w, mask.y));
+  return tex2D(_MainTex, float2(u, v)).a;
+}
 
-  // Mask - Normalized position of the _currPos in the 3d bounds of the triangle.
-  //
-  //
-  float ty = InverseLerp(_input.boundsLocal.y, _input.boundsLocal.y + _input.boundsLocal.w,
-    _currPos.y);
+  // TODO: What is this?
+float GradientToLocalLength(tmp_plus_g2f input, float sampleAlpha, float offset) {
+  float pixels = _TextureHeight * input.boundsUV.w;
+  float gradientPixelScale = _GradientScale / pixels;
+  float localM = input.boundsLocal.w * gradientPixelScale;
 
-  /*
-            v1 _____________
-           / \           |
-          /   \          |
-         /     \ ______  h
-        /     /|\     |  |
-       /     / | \    y  |
-      /     /  |  \   |  |
-    v0-------------v2-----
-     | px  | dx|   |
-     |--- x ---|   |
-     |----- w -----|
+  float min = -(localM * offset);
+  float max = localM * (1 - offset);
+  return lerp(min, max, sampleAlpha);
+}
 
-  skew = v1.x - v0.x
-  dx = y * skew/h = y/h * skew = ty * skew
-  px = x - dx
-  */
-  float dx = saturate(ty) * _input.boundsLocalZ.z;
-  float px = _currPos.x - dx;
-  float tx = InverseLerp(_input.boundsLocal.x, _input.boundsLocal.x + _input.boundsLocal.z, px);
+float IsInBounds(float3 mask) {
+  // clipX, clipY, clipZ are normalized distances of the _currPos to the nearest bound.
+  float clipX = 0.5 - abs(mask.x - 0.5) + 0.01;
+  float clipY = 0.5 - abs(mask.y - 0.5) + 0.01;
+  float clipZ = 0.5 - abs(mask.z - 0.5) + 0.01;
+  return min(0, min(clipX, min(clipY, clipZ)));
+}
 
-  // TODO: For TextMeshPro, the tz is as exprected. But for TextMeshProUGUI, the tz is affected by
-  // the `local position z` of the object (because for an UI object, the object space is relative to
-  // the canvas instead of the object). To ensure the compatibility, we added the _startPos.z here.
-  // Verify if this is correct.
-  float tz = InverseLerp(_input.boundsLocalZ.x, _input.boundsLocalZ.y, _currPos.z);
-  _currMask = float3(tx, ty, tz);
-
-  // Bound
-  float clipX = (0.5 - abs(tx - 0.5)) + 0.01;
-  float clipY = (0.5 - abs(ty - 0.5)) + 0.01;
-  float clipZ = (0.5 - abs(tz - 0.5)) + 0.01;
-  _currIsInBound = min(0, min(clipX, min(clipY, clipZ)));
-
-  // Sample
-  float maskU = saturate(lerp(_input.boundsUV.x, _input.boundsUV.x + _input.boundsUV.z,
-      saturate(tx)));
-  float maskV = saturate(lerp(_input.boundsUV.y, _input.boundsUV.y + _input.boundsUV.w,
-      saturate(ty)));
-  float alpha = tex2D(_MainTex, float2(maskU, maskV)).a;
+void NextRaymarch(float edge) {
+	_currPos = _startPos + _viewDir * _currProgress;
+  _currMask = PositionToMask(_currPos, _input);
+  _currIsInBound = IsInBounds(_currMask);
+  float alpha = SampleSDFAlpha(saturate(_currMask), _input);
   _currSampleAlpha = 1 - alpha;
 
   // TODO: What is this?
-  float sdfDistance = 1;
+  float sdfDistance = GradientToLocalLength(_input, _currSampleAlpha, edge);
+  float ratio = sdfDistance / length(_viewDir.xy);
 
   // TODO: Why?
-  float step = length(_viewDir) * sdfDistance / length(_viewDir.xy);
+  float step = length(_viewDir) * ratio;
 
   _currProgress += max(step, _MinStep);
 }

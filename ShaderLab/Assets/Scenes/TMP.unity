@@ -639,7 +639,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: TMP Ultra Sample
+  m_text: 3D Text
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: d318f781426432248acf1ee8bd0d9ac4, type: 2}
   m_sharedMaterial: {fileID: -8478635794213931440, guid: d318f781426432248acf1ee8bd0d9ac4,
@@ -761,7 +761,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1170408558}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 119}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -786,7 +786,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _tmp: {fileID: 1170408560}
-  _defaultDepth: 6.96
+  _defaultDepth: 4.91
 --- !u!1 &1343921028
 GameObject:
   m_ObjectHideFlags: 0
@@ -1242,7 +1242,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _tmp: {fileID: 1820098073}
-  _defaultDepth: 36
+  _defaultDepth: 93.8
 --- !u!21 &1932474647
 Material:
   serializedVersion: 8

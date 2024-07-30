@@ -14,10 +14,6 @@ uniform float     _WeightNormal;
 // 3D
 sampler2D         _DepthTex;
 
-// Outline
-uniform fixed4    _OutlineColor;
-uniform float     _OutlineWidth;
-
 // Font Atlas properties
 uniform sampler2D _MainTex;
 uniform float     _TextureWidth;
@@ -30,6 +26,7 @@ uniform float     _ScaleRatioB;
 uniform float     _ScaleRatioC;
 
 // Used by Unity internally to handle Texture Tiling and Offset.
+float4 _MainTex_TexelSize;
 float4            _FaceTex_ST;
 float4            _OutlineTex_ST;
 
@@ -41,9 +38,9 @@ struct tmp_plus_a2v {
   float4  position			: POSITION;
   float3  normal        : NORMAL;
   fixed4  color         : COLOR;
-  float2  uv0           : TEXCOORD0;
-  float2  uv1           : TEXCOORD1;
-  float4  uv2           : TEXCOORD2; // x=depth, y=mappingx=0, z=mappingy=1, w=0
+  float2  texcoord0     : TEXCOORD0;
+  float2  texcoord1     : TEXCOORD1;
+  float4  texcoord2     : TEXCOORD2; // x=depth, y=mappingx=0, z=mappingy=1, w=0
 };
 
 struct tmp_plus_v2g {
@@ -51,9 +48,9 @@ struct tmp_plus_v2g {
   float4  position			: POSITION;
   float3  normal        : NORMAL;
   fixed4  color         : COLOR;
-  float2  uv0           : TEXCOORD0;
-  float2  uv1           : TEXCOORD1;
-  float4  uv2           : TEXCOORD2;
+  float2  texcoord0     : TEXCOORD0;
+  float2  texcoord1     : TEXCOORD1;
+  float4  texcoord2     : TEXCOORD2;
 };
 
 struct tmp_plus_g2f {
@@ -62,9 +59,9 @@ struct tmp_plus_g2f {
   fixed4  color             : COLOR;
   float2  atlas             : TEXCOORD0;
   float4  worldPos          : TEXCOORD1;
-  float4  boundsUV      : TEXCOORD2;
-  float4  boundsLocal   : TEXCOORD3;
-  float4  boundsLocalZ  : TEXCOORD4;
+  float4  boundsUV          : TEXCOORD2;
+  float4  boundsLocal       : TEXCOORD3;
+  float4  boundsLocalZ      : TEXCOORD4;
   float4  tmpUltra          : TEXCOORD5;
   float2  tmp               : TEXCOORD6;
 };
@@ -89,7 +86,7 @@ float ComputeDepth(float4 clipPos) {
 }
 
 float InverseLerp(float a, float b, float value) {
-  return saturate((value - a) / (b - a));
+  return (value - a) / (b - a);
 }
 
 tmp_plus_g2f CreateVertex(tmp_plus_v2g worldInput, float3 worldOffset,
@@ -117,12 +114,12 @@ tmp_plus_g2f CreateVertex(tmp_plus_v2g worldInput, float3 worldOffset,
 
   o.position = vPosition; // clip space
   o.color = worldInput.color;
-  o.atlas = worldInput.uv0;
+  o.atlas = worldInput.texcoord0;
   o.boundsUV = boundsUV;
   o.boundsLocal = boundsLocal;
   o.boundsLocalZ = boundsLocalZ;
-  o.tmpUltra = worldInput.uv2;
-  o.tmp = worldInput.uv1;
+  o.tmpUltra = worldInput.texcoord2;
+  o.tmp = worldInput.texcoord1;
 
   return o;
 }
@@ -131,66 +128,61 @@ void FillGeometry(triangle tmp_plus_v2g worldInput[3], inout TriangleStream<tmp_
     float3 baseOffset, float3 worldExtrusion, float4 boundsUV, float4 boundsLocal,
     float4 boundsLocalZ) {
 
-  // Top
-    triStream.RestartStrip();
-    triStream.Append(
-        CreateVertex(worldInput[0], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
-    triStream.Append(
-        CreateVertex(worldInput[1], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
-    triStream.Append(
-        CreateVertex(worldInput[2], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+// Top
+  triStream.RestartStrip();
+  triStream.Append(
+      CreateVertex(worldInput[0], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+  triStream.Append(
+      CreateVertex(worldInput[1], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+  triStream.Append(
+      CreateVertex(worldInput[2], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
 
 
-    // Bottom
-    triStream.RestartStrip();
-    triStream.Append(
-        CreateVertex(worldInput[2], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
-    triStream.Append(
-        CreateVertex(worldInput[1], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
-    triStream.Append(
-        CreateVertex(worldInput[0], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+  // Bottom
+  triStream.RestartStrip();
+  triStream.Append(
+      CreateVertex(worldInput[2], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+  triStream.Append(
+      CreateVertex(worldInput[1], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+  triStream.Append(
+      CreateVertex(worldInput[0], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
 
-    // Side A1
-    triStream.RestartStrip();
-    triStream.Append(
-        CreateVertex(worldInput[0], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
-    triStream.Append(
-        CreateVertex(worldInput[0], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
-    triStream.Append(
-        CreateVertex(worldInput[1], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+  // Side A1
+  triStream.RestartStrip();
+  triStream.Append(
+      CreateVertex(worldInput[0], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+  triStream.Append(
+      CreateVertex(worldInput[0], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+  triStream.Append(
+      CreateVertex(worldInput[1], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
 
-    // Side A2
-    triStream.RestartStrip();
-    triStream.Append(
-        CreateVertex(worldInput[0], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
-    triStream.Append(
-        CreateVertex(worldInput[1], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
-    triStream.Append(
-        CreateVertex(worldInput[1], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+  // Side A2
+  triStream.RestartStrip();
+  triStream.Append(
+      CreateVertex(worldInput[0], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+  triStream.Append(
+      CreateVertex(worldInput[1], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+  triStream.Append(
+      CreateVertex(worldInput[1], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
 
-    // Side B1
-    triStream.RestartStrip();
-    triStream.Append(
-        CreateVertex(worldInput[1], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
-    triStream.Append(
-        CreateVertex(worldInput[1], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
-    triStream.Append(
-        CreateVertex(worldInput[2], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+  // Side B1
+  triStream.RestartStrip();
+  triStream.Append(
+      CreateVertex(worldInput[1], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+  triStream.Append(
+      CreateVertex(worldInput[1], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+  triStream.Append(
+      CreateVertex(worldInput[2], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
 
-    // Side B2
-    triStream.RestartStrip();
-    triStream.Append(
-        CreateVertex(worldInput[1], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
-    triStream.Append(
-        CreateVertex(worldInput[2], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
-    triStream.Append(
-        CreateVertex(worldInput[2], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+  // Side B2
+  triStream.RestartStrip();
+  triStream.Append(
+      CreateVertex(worldInput[1], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+  triStream.Append(
+      CreateVertex(worldInput[2], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+  triStream.Append(
+      CreateVertex(worldInput[2], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
 
-    // Side C is in between of the quad's triangles and not needed.
-}
-
-pixel_t ValidatePixel(pixel_t output, int step) {
-  // TODO: Add debug modes (steps, mask, etc)
-  return output;
+  // Side C is in between of the quad's triangles and not needed.
 }
 #endif

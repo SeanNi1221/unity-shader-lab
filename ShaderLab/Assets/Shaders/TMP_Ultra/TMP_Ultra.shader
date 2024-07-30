@@ -4,18 +4,12 @@ Shader "TextMeshPro/Ultra/Simple" {
     // General
     _FaceTex        ("Face Texture", 2D) = "white" {}
     _Color          ("Color", Color) = (1,1,1,1)
-
-    _WeightNormal		("Weight Normal", float) = 0.5
-    _WeightBold			("Weight Bold", float) = 0.75
+    _WeightBold			("Weight Bold", Range(0, 1)) = 0.6
+    _WeightNormal		("Weight Normal", Range(0, 1)) = 0.5
 
     // 3D
     _MinStep        ("Raymarch Min Step", Range(0.001, 0.1)) = 0.01
     _DepthTex       ("Depth Texture", 2D) = "white" {}
-
-    // Outline
-    _OutlineColor   ("Outline Color", Color) = (0,0,0,1)
-    _OutlineWidth		("Outline Thickness", Range(0, 1)) = 0
-    _OutlineSoftness	("Outline Softness", Range(0,1)) = 0
 
     // Font Atlas Properties
     _MainTex			("Font Atlas", 2D) = "white" {}
@@ -46,21 +40,11 @@ Shader "TextMeshPro/Ultra/Simple" {
     Blend SrcAlpha OneMinusSrcAlpha
 
     Pass {
-      Stencil {
-        Ref 2
-        Comp Always
-        Pass replace
-      }
-
       CGPROGRAM
       #pragma target 3.0
       #pragma vertex VertShader
       #pragma geometry GeomShader
-      #pragma fragment PixShader_Debug
-
-      #pragma shader_feature __ OUTLINE_ON
-      #pragma shader_feature __ MAXSTEPS_128
-      #pragma multi_compile __ DEBUG_MASK
+      #pragma fragment PixShader
 
       #pragma require geometry
 
@@ -80,9 +64,9 @@ Shader "TextMeshPro/Ultra/Simple" {
         o.position = mul(unity_ObjectToWorld, input.position);
         o.normal = mul(unity_ObjectToWorld, input.normal);
         o.color = input.color;
-        o.uv0 = input.uv0;
-        o.uv1 = input.uv1;
-        o.uv2 = input.uv2;
+        o.texcoord0 = input.texcoord0;
+        o.texcoord1 = input.texcoord1;
+        o.texcoord2 = input.texcoord2;
 
         return o;
       }
@@ -96,28 +80,29 @@ Shader "TextMeshPro/Ultra/Simple" {
 
         float3 baseOffset = float3(0, 0, 0);
 
-        // TODO: Consider removing this from uv2 and use a property instead. The canvas additional
+        // TODO: Consider removing this from texcoord2 and use a property instead. The canvas additional_currSampleAlpha
         // shader channels are needed for this, and we don't know if this conflicts with the
         // internal TMP behaviours.
-        float depth = worldInput[0].uv2.x;
+        float depth = worldInput[0].texcoord2.r;
 
         // World space, assumes that all worldInput normals are the same
         float3 worldExtrusion = worldInput[0].normal * depth;
 
+        float widthUV = abs(worldInput[2].texcoord0.x - worldInput[1].texcoord0.x);
+        float heightUV = abs(worldInput[1].texcoord0.y - worldInput[0].texcoord0.y);
+        float xUV = min(worldInput[0].texcoord0.x, worldInput[2].texcoord0.x);
+        float yUV = min(worldInput[0].texcoord0.y, worldInput[1].texcoord0.y);
+        float4 boundsUV = float4(xUV, yUV, widthUV, heightUV);
+
         float3 v0Local = mul(unity_WorldToObject, float4(worldInput[0].position.xyz, 1)).xyz;
         float3 v1Local = mul(unity_WorldToObject, float4(worldInput[1].position.xyz, 1)).xyz;
         float3 v2Local = mul(unity_WorldToObject, float4(worldInput[2].position.xyz, 1)).xyz;
+
         float widthLocal = abs(v2Local.x - v1Local.x);
         float heightLocal = abs(v1Local.y - v0Local.y);
         float xLocal = min(v0Local.x, v2Local.x);
         float yLocal = min(v0Local.y, v1Local.y);
         float4 boundsLocal = float4(xLocal, yLocal, widthLocal, heightLocal);
-
-        float widthUV = abs(worldInput[2].uv0.x - worldInput[1].uv0.x);
-        float heightUV = abs(worldInput[1].uv0.y - worldInput[0].uv0.y);
-        float xUV = min(worldInput[0].uv0.x, worldInput[2].uv0.x);
-        float yUV = min(worldInput[0].uv0.y, worldInput[1].uv0.y);
-        float4 boundsUV = float4(xUV, yUV, widthUV, heightUV);
 
         // TODO: For For TextMeshProUGUI, as an UI object, the object space is relative to the
         // canvas instead of the object. To ensure the compatibility, we added the zLocal here.
@@ -125,52 +110,12 @@ Shader "TextMeshPro/Ultra/Simple" {
         float zLocal = min(v0Local.z, v1Local.z);
 
         float skewLocal = abs(v1Local.x - v0Local.x);
-        float skewUV = abs(worldInput[1].uv0.x - worldInput[0].uv0.x);
-        float4 boundsLocalZ = float4(zLocal - depth, zLocal, skewLocal, skewUV);
+        float skewUV = abs(worldInput[1].texcoord0.x - worldInput[0].texcoord0.x);
+        // float4 boundsLocalZ = float4(zLocal - depth, zLocal, skewLocal, skewUV);
+        float4 boundsLocalZ = float4(-depth, 0, skewLocal, skewUV);
 
         FillGeometry(worldInput, triStream, baseOffset, worldExtrusion,
                      boundsUV, boundsLocal, boundsLocalZ);
-      }
-
-      pixel_t PixShader_Debug(tmp_plus_g2f input) {
-        UNITY_SETUP_INSTANCE_ID(input);
-
-        pixel_t o;
-        o.color = 0;
-        o.depth = 0;
-
-        float bold = step(input.tmp.y, 0); // original uv1.y
-        float edge = lerp(_WeightNormal, _WeightBold, bold); // choose between normal and bold
-
-        float charDepth = input.tmpUltra.x;
-        float2 depthMapped = input.tmpUltra.yz;
-
-        InitializeRaymarcher(input);
-
-        for (int i = 0; i <= MAX_STEPS; i++) {
-          NextRaymarch_Debug(edge);
-
-          o.color = float4(_currMask.zzz, 1);
-          return o;
-
-          clip(_currIsInBound);
-
-          if (_currSampleAlpha <= edge) {
-            // TODO: Convert between world and object space for _currPos
-            float progress = saturate(InverseLerp(0, charDepth, -_currPos.z));
-            progress = saturate(lerp(depthMapped.x, depthMapped.y, progress));
-            float3 depthColor = tex2D(_DepthTex, float2(progress, 0.5)) * _Color.rgb;
-            float3 faceColor = tex2D(_FaceTex, _currPos.xy * _FaceTex_ST.xy - _FaceTex_ST.zw);
-            depthColor *= faceColor;
-
-            o.depth = ComputeDepth(UnityObjectToClipPos(_currPos));
-            o.color = float4(depthColor * input.color, 1);
-            return o;
-          }
-        }
-
-        clip(-1);
-        return o;
       }
 
       pixel_t PixShader(tmp_plus_g2f input) {
@@ -180,7 +125,7 @@ Shader "TextMeshPro/Ultra/Simple" {
         o.color = 0;
         o.depth = 0;
 
-        float bold = step(input.tmp.y, 0); // original uv1.y
+        float bold = step(input.tmp.y, 0); // original texcoord1.y
         float edge = lerp(_WeightNormal, _WeightBold, bold); // choose between normal and bold
 
         float charDepth = input.tmpUltra.x;
@@ -190,29 +135,24 @@ Shader "TextMeshPro/Ultra/Simple" {
 
         for (int i = 0; i <= MAX_STEPS; i++) {
           NextRaymarch(edge);
-          float3 localPos = _currPos;
-          float3 mask = _currMask;
-          float bound = _currIsInBound;
-          float sample = _currSampleAlpha;
+          clip(_currIsInBound);
+          if (_currSampleAlpha <= edge) {
+            // TODO: Convert between world and object space for _currPos
+            float progress = saturate(InverseLerp(0, charDepth, -_currPos.z));
+            progress = saturate(lerp(depthMapped.x, depthMapped.y, progress));
 
-          clip(bound);
-
-          if (sample <= edge) {
-            float depth = -localPos.z;
-            float tProgress = saturate(InverseLerp(0, charDepth, depth));
-            float progress = saturate(lerp(depthMapped.x, depthMapped.y, tProgress));
             float3 depthColor = tex2D(_DepthTex, float2(progress, 0.5)) * _Color.rgb;
-            float3 faceColor = tex2D(_FaceTex, localPos.xy * _FaceTex_ST.xy - _FaceTex_ST.zw);
+            float3 faceColor = tex2D(_FaceTex, _currPos.xy * _FaceTex_ST.xy - _FaceTex_ST.zw);
             depthColor *= faceColor;
 
-            o.depth = ComputeDepth(UnityObjectToClipPos(localPos));
-            o.color = float4(depthColor * input.color, 1);
-            return ValidatePixel(o, i);
+            o.depth = ComputeDepth(UnityObjectToClipPos(_currPos));
+            o.color = float4(depthColor.rgb * input.color, 1);
+            return o;
           }
         }
 
         clip(-1);
-        return ValidatePixel(o, MAX_STEPS);
+        return o;
       }
       ENDCG
     }
