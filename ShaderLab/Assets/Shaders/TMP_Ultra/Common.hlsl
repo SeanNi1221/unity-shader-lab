@@ -14,6 +14,10 @@ uniform float     _WeightNormal;
 // 3D
 sampler2D         _DepthTex;
 
+// Outline
+uniform fixed4		_OutlineColor;
+uniform float		_OutlineWidth;
+
 // Font Atlas properties
 uniform sampler2D _MainTex;
 uniform float     _TextureWidth;

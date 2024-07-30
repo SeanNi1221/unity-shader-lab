@@ -1,4 +1,4 @@
-Shader "TextMeshPro/Ultra/Simple" {
+Shader "TextMeshPro/Ultra/3D" {
   Properties {
 
     // General
@@ -10,6 +10,10 @@ Shader "TextMeshPro/Ultra/Simple" {
     // 3D
     _MinStep        ("Raymarch Min Step", Range(0.001, 0.1)) = 0.01
     _DepthTex       ("Depth Texture", 2D) = "white" {}
+
+		// Outline
+		_OutlineColor("Outline Color", Color) = (0,0,0,1)
+		_OutlineWidth("Outline Thickness", Range(0,1)) = 0
 
     // Font Atlas Properties
     _MainTex			("Font Atlas", 2D) = "white" {}
@@ -49,10 +53,7 @@ Shader "TextMeshPro/Ultra/Simple" {
       #pragma require geometry
 
       #include "UnityCG.cginc"
-
-      // TODO: Remove the dependency on Common.hlsl
       #include "Common.hlsl"
-
       #include "Raymarch.hlsl"
 
       #define MAX_STEPS 32
@@ -127,6 +128,7 @@ Shader "TextMeshPro/Ultra/Simple" {
 
         float bold = step(input.tmp.y, 0); // original texcoord1.y
         float edge = lerp(_WeightNormal, _WeightBold, bold); // choose between normal and bold
+        float outlineEdge = edge + _OutlineWidth;
 
         float charDepth = input.tmpUltra.x;
         float2 depthMapped = input.tmpUltra.yz;
@@ -136,17 +138,24 @@ Shader "TextMeshPro/Ultra/Simple" {
         for (int i = 0; i <= MAX_STEPS; i++) {
           NextRaymarch(edge);
           clip(_currIsInBound);
-          if (_currSampleAlpha <= edge) {
-            // TODO: Convert between world and object space for _currPos
-            float progress = saturate(InverseLerp(0, charDepth, -_currPos.z));
-            progress = saturate(lerp(depthMapped.x, depthMapped.y, progress));
 
-            float3 depthColor = tex2D(_DepthTex, float2(progress, 0.5)) * _Color.rgb;
-            float3 faceColor = tex2D(_FaceTex, _currPos.xy * _FaceTex_ST.xy - _FaceTex_ST.zw);
-            depthColor *= faceColor;
+          if (_currSampleAlpha <= outlineEdge) {
+            // TODO: Convert between world and object space for _currPos
+            float tDepth = saturate(InverseLerp(0, charDepth, -_currPos.z));
+            tDepth = saturate(lerp(depthMapped.x, depthMapped.y, tDepth));
+
+            float3 depthColor = tex2D(_DepthTex, float2(tDepth, 0.5));
+
+            if (_currSampleAlpha > edge ) {
+              o.color = float4(depthColor * _OutlineColor.rgb, 1);
+            } else {
+              float3 faceColor = tex2D(_FaceTex, _currPos.xy * _FaceTex_ST.xy - _FaceTex_ST.zw) *
+                  _Color;
+              o.color = float4(depthColor * faceColor.rgb, 1);
+            }
 
             o.depth = ComputeDepth(UnityObjectToClipPos(_currPos));
-            o.color = float4(depthColor.rgb * input.color, 1);
+
             return o;
           }
         }
