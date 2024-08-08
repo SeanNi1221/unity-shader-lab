@@ -39,7 +39,7 @@ float4            _OutlineTex_ST;
 // =================================================================================================
 struct tmp_plus_a2v {
   UNITY_VERTEX_INPUT_INSTANCE_ID
-  float4  position		: POSITION;
+  float4  objPos        : POSITION;
   float3  normal        : NORMAL;
   fixed4  color         : COLOR;
   float2  texcoord0     : TEXCOORD0;
@@ -49,7 +49,7 @@ struct tmp_plus_a2v {
 
 struct tmp_plus_v2g {
   UNITY_VERTEX_INPUT_INSTANCE_ID
-  float4  position		: POSITION;
+  float4  worldPos   	: POSITION;
   float3  normal        : NORMAL;
   fixed4  color         : COLOR;
   float2  atlas         : TEXCOORD0;
@@ -59,13 +59,13 @@ struct tmp_plus_v2g {
 
 struct tmp_plus_g2f {
   UNITY_VERTEX_INPUT_INSTANCE_ID
-  float4  position			: SV_POSITION;
+  float4  clipPos			: SV_POSITION;
   fixed4  color             : COLOR;
   float2  atlas             : TEXCOORD0;
   float2  texcoord1         : TEXCOORD1; // tilling, bold
   float4  boundsUV          : TEXCOORD2;
-  float4  boundsLocal       : TEXCOORD3;
-  float4  boundsLocalZ      : TEXCOORD4; // x, y, width, height
+  float4  bounds            : TEXCOORD3; // x, y, width, height
+  float4  boundsZ           : TEXCOORD4; // -depth, _, skew, skewUV
   float4  param3d           : TEXCOORD5; // depth, mappingx, mappingy=1, _
   float4  worldPos          : TEXCOORD6;
 };
@@ -93,99 +93,98 @@ float InverseLerp(float a, float b, float value) {
   return (value - a) / (b - a);
 }
 
-tmp_plus_g2f CreateVertex(tmp_plus_v2g worldInput, float3 worldOffset,
+tmp_plus_g2f CreateVertex(tmp_plus_v2g input, float3 worldOffset,
                           float4 boundsUV, float4 boundsLocal, float4 boundsLocalZ) {
   tmp_plus_g2f o;
 
   // Normal is converted to object space
-  worldInput.normal = mul(unity_WorldToObject, worldInput.normal);
+  input.normal = mul(unity_WorldToObject, input.normal);
 
   UNITY_INITIALIZE_OUTPUT(tmp_plus_g2f, o);
-  UNITY_SETUP_INSTANCE_ID(worldInput);
-  UNITY_TRANSFER_INSTANCE_ID(worldInput, o);
+  UNITY_SETUP_INSTANCE_ID(input);
+  UNITY_TRANSFER_INSTANCE_ID(input, o);
   UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
-  // Position is unchanged in world space
-  worldInput.position /= worldInput.position.w;
+  input.worldPos /= input.worldPos.w;
 
-  o.worldPos = worldInput.position;
+  o.worldPos = input.worldPos;
   o.worldPos.xyz += worldOffset;
 
-  // Position is converted to clip space
+  // worldPos is converted to clip space
   // TODO: Investigate simpler alternatives for converting world to clip
   float4 vert = mul(unity_WorldToObject, o.worldPos);
-  float4 vPosition = UnityObjectToClipPos(vert);
+  float4 clipPos = UnityObjectToClipPos(vert);
 
-  o.position = vPosition; // clip space
-  o.color = worldInput.color;
-  o.atlas = worldInput.atlas;
+  o.clipPos = clipPos; // clip space
+  o.color = input.color;
+  o.atlas = input.atlas;
   o.boundsUV = boundsUV;
-  o.boundsLocal = boundsLocal;
-  o.boundsLocalZ = boundsLocalZ;
-  o.param3d = worldInput.param3d;
-  o.texcoord1 = worldInput.texcoord1;
+  o.bounds = boundsLocal;
+  o.boundsZ = boundsLocalZ;
+  o.param3d = input.param3d;
+  o.texcoord1 = input.texcoord1;
 
   return o;
 }
 
-void FillGeometry(triangle tmp_plus_v2g worldInput[3], inout TriangleStream<tmp_plus_g2f> triStream,
+void FillGeometry(triangle tmp_plus_v2g input[3], inout TriangleStream<tmp_plus_g2f> triStream,
     float3 baseOffset, float3 worldExtrusion, float4 boundsUV, float4 boundsLocal,
     float4 boundsLocalZ) {
 
 // Top
   triStream.RestartStrip();
   triStream.Append(
-      CreateVertex(worldInput[0], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[0], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
   triStream.Append(
-      CreateVertex(worldInput[1], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[1], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
   triStream.Append(
-      CreateVertex(worldInput[2], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[2], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
 
 
   // Bottom
   triStream.RestartStrip();
   triStream.Append(
-      CreateVertex(worldInput[2], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[2], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
   triStream.Append(
-      CreateVertex(worldInput[1], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[1], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
   triStream.Append(
-      CreateVertex(worldInput[0], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[0], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
 
   // Side A1
   triStream.RestartStrip();
   triStream.Append(
-      CreateVertex(worldInput[0], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[0], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
   triStream.Append(
-      CreateVertex(worldInput[0], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[0], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
   triStream.Append(
-      CreateVertex(worldInput[1], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[1], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
 
   // Side A2
   triStream.RestartStrip();
   triStream.Append(
-      CreateVertex(worldInput[0], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[0], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
   triStream.Append(
-      CreateVertex(worldInput[1], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[1], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
   triStream.Append(
-      CreateVertex(worldInput[1], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[1], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
 
   // Side B1
   triStream.RestartStrip();
   triStream.Append(
-      CreateVertex(worldInput[1], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[1], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
   triStream.Append(
-      CreateVertex(worldInput[1], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[1], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
   triStream.Append(
-      CreateVertex(worldInput[2], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[2], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
 
   // Side B2
   triStream.RestartStrip();
   triStream.Append(
-      CreateVertex(worldInput[1], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[1], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
   triStream.Append(
-      CreateVertex(worldInput[2], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[2], baseOffset, boundsUV, boundsLocal, boundsLocalZ));
   triStream.Append(
-      CreateVertex(worldInput[2], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
+      CreateVertex(input[2], worldExtrusion, boundsUV, boundsLocal, boundsLocalZ));
 
   // Side C is in between of the quad's triangles and not needed.
 }

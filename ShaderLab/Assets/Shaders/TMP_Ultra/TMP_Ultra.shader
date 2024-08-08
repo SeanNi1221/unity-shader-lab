@@ -58,11 +58,11 @@ Shader "TextMeshPro/Ultra/3D" {
 
       #define MAX_STEPS 32
 
+
       tmp_plus_v2g VertShader(tmp_plus_a2v input) {
 
         tmp_plus_v2g o;
-
-        o.position = mul(unity_ObjectToWorld, input.position);
+        o.worldPos = mul(unity_ObjectToWorld, input.objPos);
         o.normal = mul(unity_ObjectToWorld, input.normal);
         o.color = input.color;
         o.atlas = input.texcoord0;
@@ -74,30 +74,30 @@ Shader "TextMeshPro/Ultra/3D" {
 
       // Extrudes the TMP quads
       [maxvertexcount(24)]
-      void GeomShader(triangle tmp_plus_v2g worldInput[3],
+      void GeomShader(triangle tmp_plus_v2g input[3],
                       inout TriangleStream<tmp_plus_g2f> triStream) {
 
         tmp_plus_g2f o;
 
         float3 baseOffset = float3(0, 0, 0);
 
-        // TODO: Consider removing this from param3d and use a property instead. The canvas additional_currSampleAlpha
-        // shader channels are needed for this, and we don't know if this conflicts with the
-        // internal TMP behaviours.
-        float depth = worldInput[0].param3d.r;
+        // TODO: Consider removing this from param3d and use a property instead. The canvas
+        // additional_currSampleAlpha shader channels are needed for this, and we don't know if this
+        // conflicts with the internal TMP behaviours.
+        float depth = input[0].param3d.x;
 
-        // World space, assumes that all worldInput normals are the same
-        float3 worldExtrusion = worldInput[0].normal * depth;
+        // World space, assumes that all input normals are the same
+        float3 worldExtrusion = input[0].normal * depth;
 
-        float widthUV = abs(worldInput[2].atlas.x - worldInput[1].atlas.x);
-        float heightUV = abs(worldInput[1].atlas.y - worldInput[0].atlas.y);
-        float xUV = min(worldInput[0].atlas.x, worldInput[2].atlas.x);
-        float yUV = min(worldInput[0].atlas.y, worldInput[1].atlas.y);
+        float widthUV = abs(input[2].atlas.x - input[1].atlas.x);
+        float heightUV = abs(input[1].atlas.y - input[0].atlas.y);
+        float xUV = min(input[0].atlas.x, input[2].atlas.x);
+        float yUV = min(input[0].atlas.y, input[1].atlas.y);
         float4 boundsUV = float4(xUV, yUV, widthUV, heightUV);
 
-        float3 v0Local = mul(unity_WorldToObject, float4(worldInput[0].position.xyz, 1)).xyz;
-        float3 v1Local = mul(unity_WorldToObject, float4(worldInput[1].position.xyz, 1)).xyz;
-        float3 v2Local = mul(unity_WorldToObject, float4(worldInput[2].position.xyz, 1)).xyz;
+        float3 v0Local = mul(unity_WorldToObject, float4(input[0].worldPos.xyz, 1)).xyz;
+        float3 v1Local = mul(unity_WorldToObject, float4(input[1].worldPos.xyz, 1)).xyz;
+        float3 v2Local = mul(unity_WorldToObject, float4(input[2].worldPos.xyz, 1)).xyz;
 
         float widthLocal = abs(v2Local.x - v1Local.x);
         float heightLocal = abs(v1Local.y - v0Local.y);
@@ -111,11 +111,11 @@ Shader "TextMeshPro/Ultra/3D" {
         float zLocal = min(v0Local.z, v1Local.z);
 
         float skewLocal = abs(v1Local.x - v0Local.x);
-        float skewUV = abs(worldInput[1].atlas.x - worldInput[0].atlas.x);
+        float skewUV = abs(input[1].atlas.x - input[0].atlas.x);
         // float4 boundsLocalZ = float4(zLocal - depth, zLocal, skewLocal, skewUV);
         float4 boundsLocalZ = float4(-depth, 0, skewLocal, skewUV);
 
-        FillGeometry(worldInput, triStream, baseOffset, worldExtrusion,
+        FillGeometry(input, triStream, baseOffset, worldExtrusion,
                      boundsUV, boundsLocal, boundsLocalZ);
       }
 
@@ -125,6 +125,12 @@ Shader "TextMeshPro/Ultra/3D" {
         pixel_t o;
         o.color = 0;
         o.depth = 0;
+
+        float3 nmPos = normalize(input.worldPos.xyz);
+
+        // o.color = float4(nmPos, 1);
+        // o.depth = ComputeDepth(input.clipPos);
+        // return o;
 
         float bold = step(input.texcoord1.y, 0); // original texcoord1.y
         float edge = lerp(_WeightNormal, _WeightBold, bold); // choose between normal and bold

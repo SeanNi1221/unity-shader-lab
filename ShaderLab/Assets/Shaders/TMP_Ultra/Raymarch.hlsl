@@ -55,11 +55,12 @@ float3 PositionToMask(float3 localPos, tmp_plus_g2f input) {
   dx = y * skew/h = y/h * skew = ty * skew
   px = x - dx
   */
-  float ty = InverseLerp(input.boundsLocal.y, input.boundsLocal.y + input.boundsLocal.w, localPos.y);
-  float dx = saturate(ty) * input.boundsLocalZ.z;
-  float tx = InverseLerp(input.boundsLocal.x, input.boundsLocal.x + input.boundsLocal.z,
+
+  float ty = InverseLerp(input.bounds.y, input.bounds.y + input.bounds.w, localPos.y);
+  float dx = saturate(ty) * input.boundsZ.z;
+  float tx = InverseLerp(input.bounds.x, input.bounds.x + input.bounds.z,
       localPos.x - dx);
-  float tz = InverseLerp(input.boundsLocalZ.x, input.boundsLocalZ.y, localPos.z);
+  float tz = InverseLerp(input.boundsZ.x, input.boundsZ.y, localPos.z);
   return float3(tx, ty, tz);
 }
 
@@ -73,7 +74,7 @@ float SampleSDFAlpha(float3 mask, tmp_plus_g2f input) {
 float GradientToLocalLength(tmp_plus_g2f input, float sampleAlpha, float offset) {
   float pixels = _TextureHeight * input.boundsUV.w;
   float gradientPixelScale = _GradientScale / pixels;
-  float localM = input.boundsLocal.w * gradientPixelScale;
+  float localM = input.bounds.w * gradientPixelScale;
 
   float min = -(localM * offset);
   float max = localM * (1 - offset);
