@@ -42,7 +42,7 @@ struct tmp_plus_a2v {
   float4  position		: POSITION;
   float3  normal        : NORMAL;
   fixed4  color         : COLOR;
-  float2  texcoord0      : TEXCOORD0;
+  float2  texcoord0     : TEXCOORD0;
   float2  texcoord1     : TEXCOORD1;
   float4  param3d       : TEXCOORD2;
 };
@@ -62,12 +62,12 @@ struct tmp_plus_g2f {
   float4  position			: SV_POSITION;
   fixed4  color             : COLOR;
   float2  atlas             : TEXCOORD0;
-  float4  worldPos          : TEXCOORD1;
+  float2  texcoord1         : TEXCOORD1; // tilling, bold
   float4  boundsUV          : TEXCOORD2;
   float4  boundsLocal       : TEXCOORD3;
-  float4  boundsLocalZ      : TEXCOORD4;
+  float4  boundsLocalZ      : TEXCOORD4; // x, y, width, height
   float4  param3d           : TEXCOORD5; // depth, mappingx, mappingy=1, _
-  float2  texcoord1         : TEXCOORD6; // tilling, bold
+  float4  worldPos          : TEXCOORD6;
 };
 
 struct pixel_t {
