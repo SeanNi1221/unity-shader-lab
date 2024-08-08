@@ -65,9 +65,9 @@ Shader "TextMeshPro/Ultra/3D" {
         o.position = mul(unity_ObjectToWorld, input.position);
         o.normal = mul(unity_ObjectToWorld, input.normal);
         o.color = input.color;
-        o.texcoord0 = input.texcoord0;
-        o.texcoord1 = input.texcoord1;
-        o.texcoord2 = input.texcoord2;
+        o.uv0 = input.uv0;
+        o.uv1 = input.uv1;
+        o.uv2 = input.uv2;
 
         return o;
       }
@@ -81,18 +81,18 @@ Shader "TextMeshPro/Ultra/3D" {
 
         float3 baseOffset = float3(0, 0, 0);
 
-        // TODO: Consider removing this from texcoord2 and use a property instead. The canvas additional_currSampleAlpha
+        // TODO: Consider removing this from uv2 and use a property instead. The canvas additional_currSampleAlpha
         // shader channels are needed for this, and we don't know if this conflicts with the
         // internal TMP behaviours.
-        float depth = worldInput[0].texcoord2.r;
+        float depth = worldInput[0].uv2.r;
 
         // World space, assumes that all worldInput normals are the same
         float3 worldExtrusion = worldInput[0].normal * depth;
 
-        float widthUV = abs(worldInput[2].texcoord0.x - worldInput[1].texcoord0.x);
-        float heightUV = abs(worldInput[1].texcoord0.y - worldInput[0].texcoord0.y);
-        float xUV = min(worldInput[0].texcoord0.x, worldInput[2].texcoord0.x);
-        float yUV = min(worldInput[0].texcoord0.y, worldInput[1].texcoord0.y);
+        float widthUV = abs(worldInput[2].uv0.x - worldInput[1].uv0.x);
+        float heightUV = abs(worldInput[1].uv0.y - worldInput[0].uv0.y);
+        float xUV = min(worldInput[0].uv0.x, worldInput[2].uv0.x);
+        float yUV = min(worldInput[0].uv0.y, worldInput[1].uv0.y);
         float4 boundsUV = float4(xUV, yUV, widthUV, heightUV);
 
         float3 v0Local = mul(unity_WorldToObject, float4(worldInput[0].position.xyz, 1)).xyz;
@@ -111,7 +111,7 @@ Shader "TextMeshPro/Ultra/3D" {
         float zLocal = min(v0Local.z, v1Local.z);
 
         float skewLocal = abs(v1Local.x - v0Local.x);
-        float skewUV = abs(worldInput[1].texcoord0.x - worldInput[0].texcoord0.x);
+        float skewUV = abs(worldInput[1].uv0.x - worldInput[0].uv0.x);
         // float4 boundsLocalZ = float4(zLocal - depth, zLocal, skewLocal, skewUV);
         float4 boundsLocalZ = float4(-depth, 0, skewLocal, skewUV);
 
@@ -126,7 +126,7 @@ Shader "TextMeshPro/Ultra/3D" {
         o.color = 0;
         o.depth = 0;
 
-        float bold = step(input.tmp.y, 0); // original texcoord1.y
+        float bold = step(input.tmp.y, 0); // original uv1.y
         float edge = lerp(_WeightNormal, _WeightBold, bold); // choose between normal and bold
         float outlineEdge = edge + _OutlineWidth;
 

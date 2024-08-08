@@ -39,27 +39,27 @@ float4            _OutlineTex_ST;
 // =================================================================================================
 struct tmp_plus_a2v {
   UNITY_VERTEX_INPUT_INSTANCE_ID
-  float4  position			: POSITION;
+  float4  position		: POSITION;
   float3  normal        : NORMAL;
   fixed4  color         : COLOR;
-  float2  texcoord0     : TEXCOORD0;
-  float2  texcoord1     : TEXCOORD1;
-  float4  texcoord2     : TEXCOORD2; // x=depth, y=mappingx=0, z=mappingy=1, w=0
+  float2  uv0           : TEXCOORD0;
+  float2  uv1           : TEXCOORD1;
+  float4  uv2           : TEXCOORD2; // x=depth, y=mappingx=0, z=mappingy=1, w=0
 };
 
 struct tmp_plus_v2g {
   UNITY_VERTEX_INPUT_INSTANCE_ID
-  float4  position			: POSITION;
+  float4  position		: POSITION;
   float3  normal        : NORMAL;
   fixed4  color         : COLOR;
-  float2  texcoord0     : TEXCOORD0;
-  float2  texcoord1     : TEXCOORD1;
-  float4  texcoord2     : TEXCOORD2;
+  float2  uv0           : TEXCOORD0;
+  float2  uv1           : TEXCOORD1;
+  float4  uv2           : TEXCOORD2;
 };
 
 struct tmp_plus_g2f {
   UNITY_VERTEX_INPUT_INSTANCE_ID
-  float4  position			    : SV_POSITION;
+  float4  position			: SV_POSITION;
   fixed4  color             : COLOR;
   float2  atlas             : TEXCOORD0;
   float4  worldPos          : TEXCOORD1;
@@ -118,12 +118,12 @@ tmp_plus_g2f CreateVertex(tmp_plus_v2g worldInput, float3 worldOffset,
 
   o.position = vPosition; // clip space
   o.color = worldInput.color;
-  o.atlas = worldInput.texcoord0;
+  o.atlas = worldInput.uv0;
   o.boundsUV = boundsUV;
   o.boundsLocal = boundsLocal;
   o.boundsLocalZ = boundsLocalZ;
-  o.tmpUltra = worldInput.texcoord2;
-  o.tmp = worldInput.texcoord1;
+  o.tmpUltra = worldInput.uv2;
+  o.tmp = worldInput.uv1;
 
   return o;
 }
