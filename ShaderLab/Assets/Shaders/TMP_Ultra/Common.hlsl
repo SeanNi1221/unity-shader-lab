@@ -42,9 +42,9 @@ struct tmp_plus_a2v {
   float4  position		: POSITION;
   float3  normal        : NORMAL;
   fixed4  color         : COLOR;
-  float2  uv0           : TEXCOORD0;
-  float2  uv1           : TEXCOORD1;
-  float4  uv2           : TEXCOORD2; // x=depth, y=mappingx=0, z=mappingy=1, w=0
+  float2  texcoord0      : TEXCOORD0;
+  float2  texcoord1     : TEXCOORD1;
+  float4  param3d       : TEXCOORD2;
 };
 
 struct tmp_plus_v2g {
@@ -52,9 +52,9 @@ struct tmp_plus_v2g {
   float4  position		: POSITION;
   float3  normal        : NORMAL;
   fixed4  color         : COLOR;
-  float2  uv0           : TEXCOORD0;
-  float2  uv1           : TEXCOORD1;
-  float4  uv2           : TEXCOORD2;
+  float2  atlas         : TEXCOORD0;
+  float2  texcoord1     : TEXCOORD1;
+  float4  param3d       : TEXCOORD2;
 };
 
 struct tmp_plus_g2f {
@@ -66,8 +66,8 @@ struct tmp_plus_g2f {
   float4  boundsUV          : TEXCOORD2;
   float4  boundsLocal       : TEXCOORD3;
   float4  boundsLocalZ      : TEXCOORD4;
-  float4  tmpUltra          : TEXCOORD5;
-  float2  tmp               : TEXCOORD6;
+  float4  param3d           : TEXCOORD5; // depth, mappingx, mappingy=1, _
+  float2  texcoord1         : TEXCOORD6; // tilling, bold
 };
 
 struct pixel_t {
@@ -118,12 +118,12 @@ tmp_plus_g2f CreateVertex(tmp_plus_v2g worldInput, float3 worldOffset,
 
   o.position = vPosition; // clip space
   o.color = worldInput.color;
-  o.atlas = worldInput.uv0;
+  o.atlas = worldInput.atlas;
   o.boundsUV = boundsUV;
   o.boundsLocal = boundsLocal;
   o.boundsLocalZ = boundsLocalZ;
-  o.tmpUltra = worldInput.uv2;
-  o.tmp = worldInput.uv1;
+  o.param3d = worldInput.param3d;
+  o.texcoord1 = worldInput.texcoord1;
 
   return o;
 }
