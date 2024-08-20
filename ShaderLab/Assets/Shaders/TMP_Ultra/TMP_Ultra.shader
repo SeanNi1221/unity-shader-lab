@@ -69,6 +69,15 @@ Shader "TextMeshPro/Ultra/3D" {
         o.texcoord1 = input.texcoord1;
         o.param3d = input.param3d;
 
+        // Computes word to tangent space matrix. Reference:
+        //
+        // https://discussions.unity.com/t/world-space-to-tangent-space/682782/10
+        half3 wNormal = UnityObjectToWorldNormal(input.normal);
+        half3 wTangent = UnityObjectToWorldDir(input.tangent.xyz);
+        half tangentSign = input.tangent.w * unity_WorldTransformParams.w;
+        half3 wBitangent = cross(wNormal, wTangent) * tangentSign;
+        o.worldToTangent = half3x3(wTangent, wBitangent, wNormal);
+
         return o;
       }
 
@@ -86,7 +95,7 @@ Shader "TextMeshPro/Ultra/3D" {
         // conflicts with the internal TMP behaviours.
         float depth = input[0].param3d.x;
 
-        // World space, assumes that all input normals are the same
+        // World space, assumes that all input normals inside a triangle are the same
         float3 worldExtrusion = input[0].normal * depth;
 
         float widthUV = abs(input[2].atlas.x - input[1].atlas.x);

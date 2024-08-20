@@ -45,6 +45,7 @@ struct tmp_plus_a2v {
   float2  texcoord0     : TEXCOORD0;
   float2  texcoord1     : TEXCOORD1;
   float4  param3d       : TEXCOORD2;
+  float4  tangent       : TANGENT;
 };
 
 struct tmp_plus_v2g {
@@ -55,6 +56,7 @@ struct tmp_plus_v2g {
   float2  atlas         : TEXCOORD0;
   float2  texcoord1     : TEXCOORD1;
   float4  param3d       : TEXCOORD2;
+  half3x3 worldToTangent: TEXCOORD3;
 };
 
 struct tmp_plus_g2f {
@@ -68,6 +70,7 @@ struct tmp_plus_g2f {
   float4  boundsZ           : TEXCOORD4; // -depth, _, skew, skewUV
   float4  param3d           : TEXCOORD5; // depth, mappingx, mappingy=1, _
   float4  worldPos          : TEXCOORD6;
+  half3x3 worldToTangent    : TEXCOORD7;
 };
 
 struct pixel_t {
