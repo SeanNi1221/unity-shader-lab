@@ -13,6 +13,7 @@ uniform float     _WeightNormal;
 
 // 3D
 sampler2D         _DepthTex;
+float4x4          _WorldToObject;
 
 // Outline
 uniform fixed4		_OutlineColor;

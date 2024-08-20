@@ -56,5 +56,19 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "ShaderLab.sln"
+    "dotnet.defaultSolution": "ShaderLab.sln",
+    "dotnetAcquisitionExtension.existingDotnetPath": [
+      {
+          "extensionId": "ms-dotnettools.csharp",
+          "path": "C:\\Program Files\\dotnet\\dotnet.exe"
+      },
+      {
+          "extensionId": "ms-dotnettools.csdevkit",
+          "path": "C:\\Program Files\\dotnet\\dotnet.exe"
+      },
+      {
+          "extensionId": "visualstudiotoolsforunity.vstuc",
+          "path": "C:\\Program Files\\dotnet\\dotnet.exe"
+      }
+    ]
 }
