@@ -95,9 +95,9 @@ Shader "TextMeshPro/Ultra/3D" {
         float yUV = min(input[0].atlas.y, input[1].atlas.y);
         float4 boundsUV = float4(xUV, yUV, widthUV, heightUV);
 
-        float3 v0Local = mul(_WorldToObject, float4(input[0].worldPos.xyz, 1)).xyz;
-        float3 v1Local = mul(_WorldToObject, float4(input[1].worldPos.xyz, 1)).xyz;
-        float3 v2Local = mul(_WorldToObject, float4(input[2].worldPos.xyz, 1)).xyz;
+        float3 v0Local = mul(unity_WorldToObject, float4(input[0].worldPos.xyz, 1)).xyz;
+        float3 v1Local = mul(unity_WorldToObject, float4(input[1].worldPos.xyz, 1)).xyz;
+        float3 v2Local = mul(unity_WorldToObject, float4(input[2].worldPos.xyz, 1)).xyz;
 
         float widthLocal = abs(v2Local.x - v1Local.x);
         float heightLocal = abs(v1Local.y - v0Local.y);
@@ -126,12 +126,11 @@ Shader "TextMeshPro/Ultra/3D" {
         o.color = 0;
         o.depth = 0;
 
-        // Debugging  
-        // float3 nmPos = normalize(float3(input.bounds.xy, -input.boundsZ.x));
+        float3 nmPos = normalize(input.worldPos.xyz);
+
         // o.color = float4(nmPos, 1);
         // o.depth = ComputeDepth(input.clipPos);
         // return o;
-        // End Debugging
 
         float bold = step(input.texcoord1.y, 0); // original texcoord1.y
         float edge = lerp(_WeightNormal, _WeightBold, bold); // choose between normal and bold

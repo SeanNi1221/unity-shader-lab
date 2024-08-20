@@ -33,20 +33,10 @@ public class TMP_UltraHandler : MonoBehaviour {
     }
 
     TMPro_EventManager.TEXT_CHANGED_EVENT.Add(OnTextChanged);
-    _tmp.OnPreRenderText += info => UpdateWorldToObjectMatrix();
   }
 
   private void OnDisable() {
     TMPro_EventManager.TEXT_CHANGED_EVENT.Remove(OnTextChanged);
-    _tmp.OnPreRenderText -= info => UpdateWorldToObjectMatrix();
-  }
-
-
-  private void Update() {
-    if (transform.hasChanged) {
-      UpdateWorldToObjectMatrix();
-      transform.hasChanged = false;
-    }
   }
 
   private void OnTextChanged(UnityEngine.Object tmp) {
@@ -117,10 +107,7 @@ public class TMP_UltraHandler : MonoBehaviour {
         var iStrikethroughVert = charInfo.strikethroughVertexIndex;
 
         var ultraCharInfo = _ultraCharInfos[iChar];
-        var ultraVertData = new Vector4(ultraCharInfo.Depth,
-                                        ultraCharInfo.DepthMapping.x,
-                                        ultraCharInfo.DepthMapping.y,
-                                        0);
+        var ultraVertData = new Vector4(ultraCharInfo.Depth, ultraCharInfo.DepthMapping.x, ultraCharInfo.DepthMapping.y, 0);
 
         _cachedVertUVs[iCharVert + 0] = ultraVertData;
         _cachedVertUVs[iCharVert + 1] = ultraVertData;
@@ -169,11 +156,5 @@ public class TMP_UltraHandler : MonoBehaviour {
       mesh.SetUVs(2, _cachedVertUVs);
     }
     _tmp.UpdateVertexData(TMP_VertexDataUpdateFlags.Uv2);
-  }
-
-  private void UpdateWorldToObjectMatrix() {
-    Debug.Log("UpdateWorldToObjectMatrix");
-    Matrix4x4 m = transform.worldToLocalMatrix;
-    _tmp.fontMaterial.SetMatrix("_WorldToObject", m);
   }
 }
