@@ -29,14 +29,14 @@ void InitializeRaymarcher(tmp_plus_g2f input) {
   // The 4th col/row cannot be ignored because they contains the translation values
   //
   // https://blog.lidia-martinez.com/transformation-matrices-spaces-linear-algebra-unity
-  _startPos = mul(unity_WorldToObject, float4(input.worldPos.xyz, 1));
-  _viewDir = mul((float3x3)unity_WorldToObject, viewDir);
+  _startPos = mul(input.worldToTangent, input.worldPos.xyz);
+  _viewDir = mul(input.worldToTangent, viewDir);
 
   _currProgress = 0;
   _input = input;
 }
 
-float3 PositionToMask(float3 localPos, tmp_plus_g2f input) {
+float3 PositionToMask(float3 tangentPos, tmp_plus_g2f input) {
   // tx, ty, tz are the normalized coordinates of the _currPos in the 3d bounds of the triangle.
   /*
             v1 _____________
@@ -56,11 +56,11 @@ float3 PositionToMask(float3 localPos, tmp_plus_g2f input) {
   px = x - dx
   */
 
-  float ty = InverseLerp(input.bounds.y, input.bounds.y + input.bounds.w, localPos.y);
+  float ty = InverseLerp(input.bounds.y, input.bounds.y + input.bounds.w, tangentPos.y);
   float dx = saturate(ty) * input.boundsZ.z;
   float tx = InverseLerp(input.bounds.x, input.bounds.x + input.bounds.z,
-      localPos.x - dx);
-  float tz = InverseLerp(input.boundsZ.x, input.boundsZ.y, localPos.z);
+      tangentPos.x - dx);
+  float tz = InverseLerp(input.boundsZ.x, input.boundsZ.y, tangentPos.z);
   return float3(tx, ty, tz);
 }
 
@@ -74,10 +74,10 @@ float SampleSDFAlpha(float3 mask, tmp_plus_g2f input) {
 float GradientToLocalLength(tmp_plus_g2f input, float sampleAlpha, float offset) {
   float pixels = _TextureHeight * input.boundsUV.w;
   float gradientPixelScale = _GradientScale / pixels;
-  float localM = input.bounds.w * gradientPixelScale;
+  float tangentM = input.bounds.w * gradientPixelScale;
 
-  float min = -(localM * offset);
-  float max = localM * (1 - offset);
+  float min = -(tangentM * offset);
+  float max = tangentM * (1 - offset);
   return lerp(min, max, sampleAlpha);
 }
 

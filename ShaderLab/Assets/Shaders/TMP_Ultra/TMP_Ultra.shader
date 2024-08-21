@@ -95,6 +95,10 @@ Shader "TextMeshPro/Ultra/3D" {
         // conflicts with the internal TMP behaviours.
         float depth = input[0].param3d.x;
 
+        half3x3 worldToBound = input[0].worldToTangent;
+        input[1].worldToTangent = worldToBound;
+        input[2].worldToTangent = worldToBound;
+
         // World space, assumes that all input normals inside a triangle are the same
         float3 worldExtrusion = input[0].normal * depth;
 
@@ -104,29 +108,27 @@ Shader "TextMeshPro/Ultra/3D" {
         float yUV = min(input[0].atlas.y, input[1].atlas.y);
         float4 boundsUV = float4(xUV, yUV, widthUV, heightUV);
 
-        float3 v0Local = mul(unity_WorldToObject, float4(input[0].worldPos.xyz, 1)).xyz;
-        float3 v1Local = mul(unity_WorldToObject, float4(input[1].worldPos.xyz, 1)).xyz;
-        float3 v2Local = mul(unity_WorldToObject, float4(input[2].worldPos.xyz, 1)).xyz;
+        float3 v0 = mul(worldToBound, input[0].worldPos.xyz);
+        float3 v1 = mul(worldToBound, input[1].worldPos.xyz);
+        float3 v2 = mul(worldToBound, input[2].worldPos.xyz);
 
-        float widthLocal = abs(v2Local.x - v1Local.x);
-        float heightLocal = abs(v1Local.y - v0Local.y);
-        float xLocal = min(v0Local.x, v2Local.x);
-        float yLocal = min(v0Local.y, v1Local.y);
-        float4 boundsLocal = float4(xLocal, yLocal, widthLocal, heightLocal);
+        float width = abs(v2.x - v1.x);
+        float height = abs(v1.y - v0.y);
+        float x = min(v0.x, v2.x);
+        float y = min(v0.y, v1.y);
 
-        // TODO: For For TextMeshProUGUI, as an UI object, the object space is relative to the
-        // canvas instead of the object. To ensure the compatibility, we added the zLocal here.
-        // Verify if this is correct.
-        float zLocal = min(v0Local.z, v1Local.z);
+        float4 bounds = float4(x, y, width, height);
 
-        float skewLocal = abs(v1Local.x - v0Local.x);
+        float skew = abs(v1.x - v0.x);
         float skewUV = abs(input[1].atlas.x - input[0].atlas.x);
-        // float4 boundsLocalZ = float4(zLocal - depth, zLocal, skewLocal, skewUV);
-        float4 boundsLocalZ = float4(-depth, 0, skewLocal, skewUV);
+
+        float z = min(v0.z, min(v1.z, v2.z));
+        float4 boundsZ = float4(z, z+depth, skew, skewUV);
 
         FillGeometry(input, triStream, baseOffset, worldExtrusion,
-                     boundsUV, boundsLocal, boundsLocalZ);
-      }
+                     boundsUV, bounds, boundsZ);
+
+}
 
       pixel_t PixShader(tmp_plus_g2f input) {
         UNITY_SETUP_INSTANCE_ID(input);
@@ -135,11 +137,12 @@ Shader "TextMeshPro/Ultra/3D" {
         o.color = 0;
         o.depth = 0;
 
-        float3 nmPos = normalize(input.worldPos.xyz);
-
-        // o.color = float4(nmPos, 1);
-        // o.depth = ComputeDepth(input.clipPos);
-        // return o;
+        // Debug
+        float3 tangentPos = mul(input.worldToTangent, input.worldPos.xyz);
+        float3 mask = PositionToMask(tangentPos, input);
+        o.color = float4(mask.zzz, 1);
+        o.depth = ComputeDepth(input.clipPos);
+        return o;
 
         float bold = step(input.texcoord1.y, 0); // original texcoord1.y
         float edge = lerp(_WeightNormal, _WeightBold, bold); // choose between normal and bold
