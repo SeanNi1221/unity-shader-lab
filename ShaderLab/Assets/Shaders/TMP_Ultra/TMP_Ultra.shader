@@ -73,6 +73,7 @@ Shader "TextMeshPro/Ultra/3D" {
         //
         // https://discussions.unity.com/t/world-space-to-tangent-space/682782/10
         half3 wNormal = UnityObjectToWorldNormal(input.normal);
+        // half3 wNormal = o.normal;
         half3 wTangent = UnityObjectToWorldDir(input.tangent.xyz);
         half tangentSign = input.tangent.w * unity_WorldTransformParams.w;
         half3 wBitangent = cross(wNormal, wTangent) * tangentSign;
@@ -90,16 +91,14 @@ Shader "TextMeshPro/Ultra/3D" {
 
         float3 baseOffset = float3(0, 0, 0);
 
-        // TODO: Consider removing this from param3d and use a property instead. The canvas
-        // additional_currSampleAlpha shader channels are needed for this, and we don't know if this
-        // conflicts with the internal TMP behaviours.
-        float depth = input[0].param3d.x;
-
         half3x3 worldToBound = input[0].worldToTangent;
         input[1].worldToTangent = worldToBound;
         input[2].worldToTangent = worldToBound;
 
-        // World space, assumes that all input normals inside a triangle are the same
+        // TODO: Consider removing this from param3d and use a property instead. The canvas
+        // additional_currSampleAlpha shader channels are needed for this, and we don't know if this
+        // conflicts with the internal TMP behaviours.
+        float depth = input[0].param3d.x;
         float3 worldExtrusion = input[0].normal * depth;
 
         float widthUV = abs(input[2].atlas.x - input[1].atlas.x);
