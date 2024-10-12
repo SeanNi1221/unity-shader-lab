@@ -1,4 +1,9 @@
 {
+    "files.associations": {
+        "*.shader": "UnityShader",
+        "*.cginc": "UnityShader",
+        "*.hlsl": "UnityShader"
+    },
     "files.exclude": {
         "**/.DS_Store": true,
         "**/.git": true,
