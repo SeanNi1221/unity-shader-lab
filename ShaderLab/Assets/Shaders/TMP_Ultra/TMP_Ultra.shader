@@ -137,11 +137,11 @@ Shader "TextMeshPro/Ultra/3D" {
         o.depth = 0;
 
         // Debug
-        float3 tangentPos = mul(input.worldToTangent, input.worldPos.xyz);
-        float3 mask = PositionToMask(tangentPos, input);
-        o.color = float4(mask.zzz, 1);
-        o.depth = ComputeDepth(input.clipPos);
-        return o;
+        // float3 tangentPos = mul(input.worldToTangent, input.worldPos.xyz);
+        // float3 mask = PositionToMask(tangentPos, input);
+        // o.color = float4(mask.zzz, 1);
+        // o.depth = ComputeDepth(input.clipPos);
+        // return o;
 
         float bold = step(input.texcoord1.y, 0); // original texcoord1.y
         float edge = lerp(_WeightNormal, _WeightBold, bold); // choose between normal and bold
